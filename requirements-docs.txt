@@ -1,5 +1,6 @@
 pydata-sphinx-theme>=0.6.3
 myst-nb
+pymc @ git+https://github.com/pymc-devs/pymc@main
 bambi>=0.15.0
 sphinx>=4
 sphinx-copybutton
