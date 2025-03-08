@@ -163,8 +163,8 @@ class SBC:
     def _get_posterior_samples_numpyro(self, prior_predictive_draw):
         """Generate posterior samples using numpyro conditioned to a prior predictive sample."""
         mcmc = MCMC(self.numpyro_model, **self.sample_kwargs)
-        filtered_data_dir = {k: v for k, v in self.data_dir.items() if k not in self.observed_vars}
-        mcmc.run(self._seed, **filtered_data_dir, **prior_predictive_draw)
+        free_vars_data = {k: v for k, v in self.data_dir.items() if k not in self.observed_vars}
+        mcmc.run(self._seed, **free_vars_data, **prior_predictive_draw)
         idata = az.from_dict(posterior=mcmc.get_samples())
         return az.extract(idata, group="posterior")
 
