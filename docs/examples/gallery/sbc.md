@@ -101,3 +101,44 @@ sbc.plot_results(kind="hist")
 ```
 
 :::::
+
+:::::{tab-item} Numpyro
+:sync: numpyro
+
+We define a Numpyro Model, we use the centered eight schools model.
+
+```{jupyter-execute}
+
+def eight_schools_cauchy_prior(J, sigma, y=None):
+    mu = numpyro.sample("mu", dist.Normal(0, 5))
+    tau = numpyro.sample("tau", dist.HalfCauchy(5))
+    with numpyro.plate("J", J):
+        theta = numpyro.sample("theta", dist.Normal(mu, tau))
+    numpyro.sample("y", dist.Normal(theta, sigma), obs=y)
+
+# We use the NUTS sampler
+nuts_kernel = NUTS(eight_schools_cauchy_prior)
+```
+
+Pass the model to the `SBC` class, set the number of simulations to 10, and run the simulations. For numpyro model, 
+we pass in the ``data_dir`` parameter.
+
+```{jupyter-execute}
+
+sbc = simuk.SBC(nuts_kernel,
+    sample_kwargs={"num_warmup": 1000, "num_samples": 1000, "progress_bar": False},
+    num_simulations=10,
+    seed=random.PRNGKey(10),
+    data_dir={"J": 8, "sigma": sigma, "y": y},
+)
+
+sbc.run_simulations()
+```
+
+To compare the prior and posterior distributions, we will plot the results. You can customize the visualization type 
+using the `kind` parameter. The example below displays a histogram.
+
+```{jupyter-execute}
+
+sbc.plot_results(kind="hist")
+```

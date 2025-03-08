@@ -1,8 +1,12 @@
 import bambi as bmb
 import numpy as np
+import numpyro
+import numpyro.distributions as dist
 import pandas as pd
 import pymc as pm
 import pytest
+from jax import random
+from numpyro.infer import NUTS
 
 import simuk
 
@@ -29,6 +33,26 @@ def test_sbc(model, kind):
         model,
         num_simulations=10,
         sample_kwargs={"draws": 25, "tune": 50},
+    )
+    sbc.run_simulations()
+    sbc.plot_results(kind=kind)
+
+
+@pytest.mark.parametrize("kind, num_simulations", [("ecdf", 5), ("hist", 10)])
+def test_sbc_numpyro(kind, num_simulations):
+    def eight_schools_cauchy_prior(J, sigma, y=None):
+        mu = numpyro.sample("mu", dist.Normal(0, 5))
+        tau = numpyro.sample("tau", dist.HalfCauchy(5))
+        with numpyro.plate("J", J):
+            theta = numpyro.sample("theta", dist.Normal(mu, tau))
+        numpyro.sample("y", dist.Normal(theta, sigma), obs=y)
+
+    sbc = simuk.SBC(
+        NUTS(eight_schools_cauchy_prior),
+        sample_kwargs={"num_warmup": 1000, "num_samples": 1000, "progress_bar": False},
+        num_simulations=num_simulations,
+        seed=random.PRNGKey(10),
+        data_dir={"J": 8, "sigma": sigma, "y": y},
     )
     sbc.run_simulations()
     sbc.plot_results(kind=kind)
