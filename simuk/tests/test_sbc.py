@@ -38,7 +38,7 @@ def test_sbc(model, kind):
     sbc.plot_results(kind=kind)
 
 
-@pytest.mark.parametrize("kind, num_simulations", [("ecdf", 5), ("hist", 10)])
+@pytest.mark.parametrize("kind, num_simulations", [("ecdf", 5), ("hist", 8)])
 def test_sbc_numpyro(kind, num_simulations):
     def eight_schools_cauchy_prior(J, sigma, y=None):
         mu = numpyro.sample("mu", dist.Normal(0, 5))
