@@ -4,7 +4,7 @@ pytest-cov>=2.6.1
 pytest>=4.4.0
 pre-commit>=2.19
 ipytest==0.13.0
-pymc @ git+https://github.com/pymc-devs/pymc@main
+pymc>=5.20.1
 bambi>=0.15.0
 arviz>=0.20.0
 ruff==0.9.1
