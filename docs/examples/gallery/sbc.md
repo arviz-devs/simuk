@@ -15,9 +15,10 @@ This example demonstrates how to use the `SBC` class for simulation-based calibr
 
 ```{jupyter-execute}
 
-from arviz_plots import plot_ecdf_pit
+from arviz_plots import plot_ecdf_pit, style
 import numpy as np
 import simuk
+style.use("arviz-variat")
 ```
 
 ::::::{tab-set}
@@ -51,7 +52,7 @@ sbc = simuk.SBC(centered_eight,
     num_simulations=100,
     sample_kwargs={'draws': 25, 'tune': 50})
 
-sbc.run_simulations()
+sbc.run_simulations();
 ```
 
 To compare the prior and posterior distributions, we will plot the results from the simulations,
@@ -93,7 +94,7 @@ sbc = simuk.SBC(bmb_model,
     num_simulations=100,
     sample_kwargs={'draws': 25, 'tune': 50})
 
-sbc.run_simulations()
+sbc.run_simulations();
 ```
 
 To compare the prior and posterior distributions, we will plot the results from the simulations.
