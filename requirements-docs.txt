@@ -1,8 +1,8 @@
 pydata-sphinx-theme>=0.6.3
 myst-nb
-pymc @ git+https://github.com/pymc-devs/pymc@main
+pymc>=5.20.1
 bambi>=0.15.0
-arviz_plots>=0.4.0
+arviz_plots @ git+https://github.com/arviz-devs/arviz_plots@main
 sphinx>=4
 sphinx-copybutton
 sphinx_tabs
