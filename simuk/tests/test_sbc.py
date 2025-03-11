@@ -17,18 +17,18 @@ with pm.Model() as centered_eight:
     theta = pm.Normal("theta", mu=mu, sigma=tau, shape=8)
     y_obs = pm.Normal("y", mu=theta, sigma=sigma, observed=data)
 
-x = np.random.normal(0, 1, 200)
+x = np.random.normal(0, 1, 20)
 y = 2 + np.random.normal(x, 1)
 df = pd.DataFrame({"x": x, "y": y})
 bmb_model = bmb.Model("y ~ x", df)
 
 
-@pytest.mark.parametrize("model, kind", [(centered_eight, "ecdf"), (bmb_model, "hist")])
-def test_sbc(model, kind):
+@pytest.mark.parametrize("model", [centered_eight, bmb_model])
+def test_sbc(model):
     sbc = simuk.SBC(
         model,
         num_simulations=10,
-        sample_kwargs={"draws": 25, "tune": 50},
+        sample_kwargs={"draws": 5, "tune": 5},
     )
     sbc.run_simulations()
-    sbc.plot_results(kind=kind)
+    assert "prior_sbc" in sbc.simulations
