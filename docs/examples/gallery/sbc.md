@@ -15,9 +15,10 @@ This example demonstrates how to use the `SBC` class for simulation-based calibr
 
 ```{jupyter-execute}
 
-import matplotlib.pyplot as plt
+from arviz_plots import plot_ecdf_pit, style
 import numpy as np
 import simuk
+style.use("arviz-variat")
 ```
 
 ::::::{tab-set}
@@ -42,8 +43,8 @@ with pm.Model() as centered_eight:
     y_obs = pm.Normal('y', mu=theta, sigma=sigma, observed=data)
 ```
 
-Pass the model to the SBC class, set the number of simulations to 100, and run the simulations. This process may take 
-some time since the model runs multiple times.
+Pass the model to the SBC class, set the number of simulations to 100, and run the simulations. This process may take
+some time since the model runs multiple times (100 in this example).
 
 ```{jupyter-execute}
 
@@ -51,15 +52,19 @@ sbc = simuk.SBC(centered_eight,
     num_simulations=100,
     sample_kwargs={'draws': 25, 'tune': 50})
 
-sbc.run_simulations()
+sbc.run_simulations();
 ```
 
-To compare the prior and posterior distributions, we will plot the results. You can adjust the type of visualization 
-using the ``kind`` parameter. We use the empirical CDF to compare the differences between the prior and posterior.
+To compare the prior and posterior distributions, we will plot the results from the simulations,
+using the ArviZ function `plot_ecdf_pit`.
+We expect a uniform distribution, the gray envelope corresponds to the 94% credible interval.
 
 ```{jupyter-execute}
 
-sbc.plot_results(kind="ecdf")
+plot_ecdf_pit(sbc.simulations,
+              pc_kwargs={'col_wrap':4},
+              plot_kwargs={"xlabel":False},
+)
 ```
 
 :::::
@@ -80,7 +85,7 @@ df = pd.DataFrame({"x": x, "y": y})
 bmb_model = bmb.Model("y ~ x", df)
 ```
 
-Pass the model to the `SBC` class, set the number of simulations to 100, and run the simulations. 
+Pass the model to the `SBC` class, set the number of simulations to 100, and run the simulations.
 This process may take some time, as the model runs multiple times
 
 ```{jupyter-execute}
@@ -89,15 +94,14 @@ sbc = simuk.SBC(bmb_model,
     num_simulations=100,
     sample_kwargs={'draws': 25, 'tune': 50})
 
-sbc.run_simulations()
+sbc.run_simulations();
 ```
 
-To compare the prior and posterior distributions, we will plot the results. You can customize the visualization type 
-using the `kind` parameter. The example below displays a histogram.
+To compare the prior and posterior distributions, we will plot the results from the simulations.
+We expect a uniform distribution, the gray envelope corresponds to the 94% credible interval.
 
 ```{jupyter-execute}
-
-sbc.plot_results(kind="hist")
+plot_ecdf_pit(sbc.simulations)
 ```
 
 :::::

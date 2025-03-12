@@ -2,13 +2,12 @@
 
 import logging
 from copy import copy
+from importlib.metadata import version
 
-import arviz as az
 import numpy as np
 import pymc as pm
+from arviz_base import extract, from_dict
 from tqdm import tqdm
-
-from simuk.plots import plot_results
 
 
 class quiet_logging:
@@ -93,30 +92,47 @@ class SBC:
 
         self.simulations = {name: [] for name in self.var_names}
         self._simulations_complete = 0
-        self._seed = seed
+        self.seed = seed
+        self._seeds = self._get_seeds()
 
     def _get_seeds(self):
         """Set the random seed, and generate seeds for all the simulations."""
-        if self._seed is not None:
-            np.random.seed(self._seed)
-        return np.random.randint(2**30, size=self.num_simulations)
+        rng = np.random.default_rng(self.seed)
+        return rng.integers(0, 2**30, size=self.num_simulations)
 
     def _get_prior_predictive_samples(self):
         """Generate samples to use for the simulations."""
         with self.model:
-            idata = pm.sample_prior_predictive(samples=self.num_simulations)
-            prior_pred = az.extract(idata, group="prior_predictive")
-            prior = az.extract(idata, group="prior")
+            idata = pm.sample_prior_predictive(
+                samples=self.num_simulations, random_seed=self._seeds[0]
+            )
+            prior_pred = extract(idata, group="prior_predictive", keep_dataset=True)
+            prior = extract(idata, group="prior", keep_dataset=True)
         return prior, prior_pred
 
     def _get_posterior_samples(self, prior_predictive_draw):
         """Generate posterior samples conditioned to a prior predictive sample."""
         new_model = pm.observe(self.model, prior_predictive_draw)
         with new_model:
-            check = pm.sample(**self.sample_kwargs)
+            check = pm.sample(
+                **self.sample_kwargs, random_seed=self._seeds[self._simulations_complete]
+            )
 
-        posterior = az.extract(check, group="posterior")
+        posterior = extract(check, group="posterior", keep_dataset=True)
         return posterior
+
+    def _convert_to_datatree(self):
+        self.simulations = from_dict(
+            {"prior_sbc": self.simulations},
+            attrs={
+                "/": {
+                    "inferece_library": self.engine,
+                    "inferece_library_version": version(self.engine),
+                    "modeling_interface": "simuk",
+                    "modeling_interface_version": version("simuk"),
+                }
+            },
+        )
 
     @quiet_logging("pymc", "pytensor.gof.compilelock", "bambi")
     def run_simulations(self):
@@ -127,7 +143,6 @@ class SBC:
         seed was passed initially, it will still be respected (that is, the resulting
         simulations will be identical to running without pausing in the middle).
         """
-        seeds = self._get_seeds()
         prior, prior_pred = self._get_prior_predictive_samples()
 
         progress = tqdm(
@@ -142,8 +157,6 @@ class SBC:
                     for var_name in self.observed_vars
                 }
 
-                np.random.seed(seeds[idx])
-
                 posterior = self._get_posterior_samples(prior_predictive_draw)
                 for name in self.var_names:
                     self.simulations[name].append(
@@ -153,34 +166,8 @@ class SBC:
                 progress.update()
         finally:
             self.simulations = {
-                k: v[: self._simulations_complete] for k, v in self.simulations.items()
+                k: np.stack(v[: self._simulations_complete])[None, :]
+                for k, v in self.simulations.items()
             }
+            self._convert_to_datatree()
             progress.close()
-
-    def plot_results(self, kind="ecdf", var_names=None, color="C0"):
-        """Visual diagnostic for SBC.
-
-        Currently it support two options: `ecdf` for the empirical CDF plots
-        of the difference between prior and posterior. `hist` for the rank
-        histogram.
-
-
-        Parameters
-        ----------
-        simulations : dict[str] -> listlike
-            The SBC.simulations dictionary.
-        kind : str
-            What kind of plot to make. Supported values are 'ecdf' (default) and 'hist'
-        var_names : list[str]
-            Variables to plot (defaults to all)
-        figsize : tuple
-            Figure size for the plot. If None, it will be defined automatically.
-        color : str
-            Color to use for the eCDF or histogram
-
-        Returns
-        -------
-        fig, axes
-            matplotlib figure and axes
-        """
-        return plot_results(self.simulations, kind=kind, var_names=var_names, color=color)
