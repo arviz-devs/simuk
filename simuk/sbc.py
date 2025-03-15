@@ -5,8 +5,11 @@ from copy import copy
 from importlib.metadata import version
 
 try:
+    import pymc as pm
+except ImportError:
+    pass
+try:
     import jax
-    from arviz import from_numpyro
     from numpyro.handlers import seed, trace
     from numpyro.infer import MCMC, Predictive
     from numpyro.infer.mcmc import MCMCKernel
@@ -14,7 +17,7 @@ except ImportError:
     pass
 
 import numpy as np
-import pymc as pm
+from arviz import from_numpyro
 from arviz_base import extract, from_dict
 from tqdm import tqdm
 
@@ -74,9 +77,17 @@ class SBC:
     """
 
     def __init__(self, model, num_simulations=1000, sample_kwargs=None, seed=None, data_dir=None):
-        if isinstance(model, pm.Model):
+        print(isinstance(model, MCMCKernel))
+        if hasattr(model, "basic_RVs") and isinstance(model, pm.Model):
             self.engine = "pymc"
             self.model = model
+        elif hasattr(model, "formula"):
+            self.engine = "bambi"
+            model.build()
+            self.bambi_model = model
+            self.model = model.backend.model
+            self.formula = model.formula
+            self.new_data = copy(model.data)
         elif isinstance(model, MCMCKernel):
             self.engine = "numpyro"
             self.numpyro_model = model
@@ -84,12 +95,9 @@ class SBC:
             self.run_simulations = self._run_simulations_numpyro
             self.data_dir = data_dir
         else:
-            self.engine = "bambi"
-            model.build()
-            self.bambi_model = model
-            self.model = model.backend.model
-            self.formula = model.formula
-            self.new_data = copy(model.data)
+            raise ValueError(
+                "model should be one of pymc.Model, bambi.Model, or numpyro.infer.mcmc.MCMCKernel"
+            )
         self.num_simulations = num_simulations
         if sample_kwargs is None:
             sample_kwargs = {}

@@ -7,6 +7,5 @@ ipytest==0.13.0
 pymc>=5.20.1
 bambi>=0.13.0
 arviz_base>=0.4.0
-arviz>=0.20.0
 ruff==0.9.1
 numpyro>=0.17.0

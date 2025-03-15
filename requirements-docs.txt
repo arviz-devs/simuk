@@ -9,5 +9,4 @@ sphinx_tabs
 sphinx-design
 numpydoc
 jupyter-sphinx
-arviz>=0.20.0
 numpyro>=0.17.0
