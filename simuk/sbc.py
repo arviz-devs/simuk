@@ -235,7 +235,7 @@ class SBC:
                 posterior = self._get_posterior_samples_numpyro(prior_predictive_draw)
                 for name in self.var_names:
                     self.simulations[name].append(
-                        (posterior[name] < prior[name][idx]).sum(axis=0).values
+                        (posterior[name].sel(chain=0) < prior[name][idx]).sum(axis=0).values
                     )
                 self._simulations_complete += 1
                 progress.update()
