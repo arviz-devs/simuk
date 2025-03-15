@@ -128,14 +128,13 @@ def eight_schools_cauchy_prior(J, sigma, y=None):
 nuts_kernel = NUTS(eight_schools_cauchy_prior)
 ```
 
-Pass the model to the `SBC` class, set the number of simulations to 8, and run the simulations. For numpyro model, 
+Pass the model to the `SBC` class, set the number of simulations to 100, and run the simulations. For numpyro model, 
 we pass in the ``data_dir`` parameter.
 
 ```{jupyter-execute}
 sbc = simuk.SBC(nuts_kernel,
     sample_kwargs={"num_warmup": 1000, "num_samples": 1000, "progress_bar": False},
-    num_simulations=8,
-    seed=random.PRNGKey(10),
+    num_simulations=100,
     data_dir={"J": 8, "sigma": sigma, "y": y},
 )
 sbc.run_simulations()
