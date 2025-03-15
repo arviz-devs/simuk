@@ -77,7 +77,6 @@ class SBC:
     """
 
     def __init__(self, model, num_simulations=1000, sample_kwargs=None, seed=None, data_dir=None):
-        print(isinstance(model, MCMCKernel))
         if hasattr(model, "basic_RVs") and isinstance(model, pm.Model):
             self.engine = "pymc"
             self.model = model
