@@ -140,8 +140,7 @@ sbc = simuk.SBC(nuts_kernel,
 sbc.run_simulations()
 ```
 
-To compare the prior and posterior distributions, we will plot the results. 
-We expect a uniform distribution, the gray envelope corresponds to the 94% credible interval.
+To compare the prior and posterior distributions, we will plot the results.
 
 ```{jupyter-execute}
 plot_ecdf_pit(sbc.simulations, 
