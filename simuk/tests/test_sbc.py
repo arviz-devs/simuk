@@ -51,6 +51,7 @@ def test_sbc_numpyro():
     sbc = simuk.SBC(
         NUTS(eight_schools_cauchy_prior),
         data_dir={"J": 8, "sigma": sigma, "y": y},
+        num_simulations=10,
         sample_kwargs={"num_warmup": 1000, "num_samples": 1000},
     )
     sbc.run_simulations()
