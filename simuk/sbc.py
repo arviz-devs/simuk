@@ -152,7 +152,8 @@ class SBC:
     def _get_prior_predictive_samples_numpyro(self):
         """Generate samples to use for the simulations using numpyro."""
         predictive = Predictive(self.model, num_samples=self.num_simulations)
-        samples = predictive(jax.random.PRNGKey(self._seeds[0]), **self.data_dir)
+        free_vars_data = {k: v for k, v in self.data_dir.items() if k not in self.observed_vars}
+        samples = predictive(jax.random.PRNGKey(self._seeds[0]), **free_vars_data)
         prior = {k: v for k, v in samples.items() if k not in self.observed_vars}
         prior_pred = {k: v for k, v in samples.items() if k in self.observed_vars}
         return prior, prior_pred
