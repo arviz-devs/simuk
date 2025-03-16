@@ -133,7 +133,7 @@ we pass in the ``data_dir`` parameter.
 
 ```{jupyter-execute}
 sbc = simuk.SBC(nuts_kernel,
-    sample_kwargs={"num_warmup": 1000, "num_samples": 1000, "progress_bar": False},
+    sample_kwargs={"num_warmup": 1000, "num_samples": 1000},
     num_simulations=100,
     data_dir={"J": 8, "sigma": sigma, "y": y},
 )
@@ -141,6 +141,7 @@ sbc.run_simulations()
 ```
 
 To compare the prior and posterior distributions, we will plot the results.
+We expect a uniform distribution, the gray envelope corresponds to the 94% credible interval.
 
 ```{jupyter-execute}
 plot_ecdf_pit(sbc.simulations, 
