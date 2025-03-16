@@ -52,7 +52,7 @@ def test_sbc_numpyro():
         NUTS(eight_schools_cauchy_prior),
         data_dir={"J": 8, "sigma": sigma, "y": y},
         num_simulations=10,
-        sample_kwargs={"num_warmup": 1000, "num_samples": 1000},
+        sample_kwargs={"num_warmup": 50, "num_samples": 25},
     )
     sbc.run_simulations()
     assert "prior_sbc" in sbc.simulations

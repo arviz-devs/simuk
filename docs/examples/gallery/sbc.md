@@ -133,7 +133,7 @@ we pass in the ``data_dir`` parameter.
 
 ```{jupyter-execute}
 sbc = simuk.SBC(nuts_kernel,
-    sample_kwargs={"num_warmup": 1000, "num_samples": 1000},
+    sample_kwargs={"num_warmup": 50, "num_samples": 75},
     num_simulations=100,
     data_dir={"J": 8, "sigma": sigma, "y": y},
 )
