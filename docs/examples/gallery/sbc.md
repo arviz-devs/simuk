@@ -116,14 +116,17 @@ import numpyro
 import numpyro.distributions as dist
 from jax import random
 from numpyro.infer import NUTS
+
 y = np.array([28.0, 8.0, -3.0, 7.0, -1.0, 1.0, 18.0, 12.0])
 sigma = np.array([15.0, 10.0, 16.0, 11.0, 9.0, 11.0, 10.0, 18.0])
+
 def eight_schools_cauchy_prior(J, sigma, y=None):
     mu = numpyro.sample("mu", dist.Normal(0, 5))
     tau = numpyro.sample("tau", dist.HalfCauchy(5))
     with numpyro.plate("J", J):
         theta = numpyro.sample("theta", dist.Normal(mu, tau))
     numpyro.sample("y", dist.Normal(theta, sigma), obs=y)
+
 # We use the NUTS sampler
 nuts_kernel = NUTS(eight_schools_cauchy_prior)
 ```
