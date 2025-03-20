@@ -17,8 +17,7 @@ except ImportError:
     pass
 
 import numpy as np
-from arviz import from_numpyro
-from arviz_base import extract, from_dict
+from arviz_base import extract, from_dict, from_numpyro
 from tqdm import tqdm
 
 
