@@ -1,11 +1,9 @@
-# Simulation Based Calibration
+# Simuk
 
-A [PyMC](http://docs.pymc.io) and [Bambi](https://bambinos.github.io/bambi/) implementation of the algorithms from:
+Simuk is a Python library for simulation-based calibration (SBC) and the generation of synthetic data.
+Simulation-Based Calibration is a method for validating Bayesian inference by checking whether the posterior distributions align with the expected theoretical results derived from the prior.
 
-Sean Talts, Michael Betancourt, Daniel Simpson, Aki Vehtari, Andrew Gelman: “Validating Bayesian Inference Algorithms with Simulation-Based Calibration”, 2018; [arXiv:1804.06788](http://arxiv.org/abs/1804.06788)
-
-Many thanks to the authors for providing open, reproducible code and implementations in `rstan` and `PyStan` ([link](https://github.com/seantalts/simulation-based-calibration)).
-
+Simuk works with [PyMC](http://docs.pymc.io), [Bambi](https://bambinos.github.io/bambi/) and [NumPyro](https://num.pyro.ai/en/latest/index.html) models.
 
 ## Installation
 
@@ -56,30 +54,8 @@ should be close to uniform and within the oval envelope.
 
 ![Simulation based calibration plots, ecdf](ecdf.png)
 
+## References
 
-## What is going on here?
-
-The [paper on the arXiv](http://arxiv.org/abs/1804.06788) is very well written, and explains the algorithm quite well.
-
-Morally, the example below is exactly what this library does, but it generalizes to more complicated models:
-
-```python
-with pm.Model() as model:
-    x = pm.Normal('x')
-    pm.Normal('y', mu=x, observed=y)
-```
-
-Then what this library does is compute
-
-```python
-with my_model():
-    prior_samples = pm.sample_prior_predictive(num_trials)
-
-simulations = {'x': []}
-for idx in range(num_trials):
-    y_tilde = prior_samples['y'][idx]
-    x_tilde = prior_samples['x'][idx]
-    with model(y=y_tilde):
-        idata = pm.sample()
-    simulations['x'].append((idata.posterior['x'] < x_tilde).sum())
-```
+- Talts, S., Betancourt, M., Simpson, D., Vehtari A., and Gelman A. (2018). “Validating Bayesian Inference Algorithms with Simulation-Based Calibration.” `arXiv:1804.06788 <https://doi.org/10.48550/arXiv.1804.06788>`_.
+- Modrák, M., Moon, A, Kim, S., Bürkner, P., Huurre, N., Faltejsková, K., Gelman A and Vehtari, A.(2023). "Simulation-based calibration checking for Bayesian computation: The choice of test quantities shapes sensitivity. Bayesian Analysis, advance publication, DOI: `10.1214/23-BA1404 <https://projecteuclid.org/journals/bayesian-analysis/volume--1/issue--1/Simulation-Based-Calibration-Checking-for-Bayesian-Computation--The-Choice/10.1214/23-BA1404.full>`_
+- Säilynoja, T., Marvin Schmitt, Paul-Christian Bürkner and Aki Vehtari (2025). "Posterior SBC: Simulation-Based Calibration Checking Conditional on Data" `arXiv:2502.03279 <https://doi.org/10.48550/arXiv.2502.03279>`_.
