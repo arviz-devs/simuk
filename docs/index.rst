@@ -18,6 +18,7 @@ In our case, we will take a PyMC model and pass it into our ``SBC`` class.
 
 .. code-block:: python
 
+    from arviz_plots import plot_ecdf_pit
     import numpy as np
     import pymc as pm
 
@@ -44,7 +45,9 @@ Plot the empirical CDF to compare the differences between the prior and posterio
 
 .. code-block:: python
 
-    sbc.plot_results()
+    plot_ecdf_pit(sbc.simulations,
+                visuals={"xlabel":False},
+    );
 
 The lines should be nearly uniform and fall within the oval envelope. It suggests that the prior and posterior distributions
 are properly aligned and that there are no significant biases or issues with the model.
@@ -82,5 +85,6 @@ are properly aligned and that there are no significant biases or issues with the
 References
 ----------
 
-- Talts, Sean, Michael Betancourt, Daniel Simpson, Aki Vehtari, and Andrew Gelman. 2018. “Validating Bayesian Inference Algorithms with Simulation-Based Calibration.” `arXiv:1804.06788 <https://doi.org/10.48550/arXiv.1804.06788>`_.
-- Modrák, M., Moon, A. H., Kim, S., Bürkner, P., Huurre, N., Faltejsková, K., … & Vehtari, A. (2023). Simulation-based calibration checking for Bayesian computation: The choice of test quantities shapes sensitivity. Bayesian Analysis, advance publication, DOI: `10.1214/23-BA1404 <https://projecteuclid.org/journals/bayesian-analysis/volume--1/issue--1/Simulation-Based-Calibration-Checking-for-Bayesian-Computation--The-Choice/10.1214/23-BA1404.full>`_
+- Talts, S., Betancourt, M., Simpson, D., Vehtari A., and Gelman A. (2018). “Validating Bayesian Inference Algorithms with Simulation-Based Calibration.” `arXiv:1804.06788 <https://doi.org/10.48550/arXiv.1804.06788>`_.
+- Modrák, M., Moon, A, Kim, S., Bürkner, P., Huurre, N., Faltejsková, K., Gelman A and Vehtari, A.(2023). "Simulation-based calibration checking for Bayesian computation: The choice of test quantities shapes sensitivity. Bayesian Analysis, advance publication, DOI: `10.1214/23-BA1404 <https://projecteuclid.org/journals/bayesian-analysis/volume--1/issue--1/Simulation-Based-Calibration-Checking-for-Bayesian-Computation--The-Choice/10.1214/23-BA1404.full>`_
+- Säilynoja, T., Marvin Schmitt, Paul-Christian Bürkner and Aki Vehtari (2025). "Posterior SBC: Simulation-Based Calibration Checking Conditional on Data" `arXiv:2502.03279 <https://doi.org/10.48550/arXiv.2502.03279>`_.
