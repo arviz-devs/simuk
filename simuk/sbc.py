@@ -70,6 +70,7 @@ class SBC:
             y = pm.Normal('y', mu=2 * x, observed=obs)
 
         sbc = SBC(model)
+        sbc.run_simulations()
     """
 
     def __init__(self, model, num_simulations=1000, sample_kwargs=None, seed=None, data_dir=None):
