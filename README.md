@@ -22,6 +22,7 @@ pip install simuk
     ```python
     import numpy as np
     import pymc as pm
+    from arviz_plots import plot_ecdf_pit
 
     data = np.array([28.0, 8.0, -3.0, 7.0, -1.0, 1.0, 18.0, 12.0])
     sigma = np.array([15.0, 10.0, 16.0, 11.0, 9.0, 11.0, 10.0, 18.0])
@@ -48,7 +49,9 @@ pip install simuk
 should be close to uniform and within the oval envelope.
 
     ```python
-    sbc.plot_results()
+    plot_ecdf_pit(sbc.simulations,
+                visuals={"xlabel":False},
+    );
     ```
 
 ![Simulation based calibration plots, ecdf](ecdf.png)

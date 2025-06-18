@@ -62,9 +62,8 @@ We expect a uniform distribution, the gray envelope corresponds to the 94% credi
 ```{jupyter-execute}
 
 plot_ecdf_pit(sbc.simulations,
-              pc_kwargs={'col_wrap':4},
-              plot_kwargs={"xlabel":False},
-)
+              visuals={"xlabel":False},
+);
 ```
 
 :::::
@@ -131,7 +130,7 @@ def eight_schools_cauchy_prior(J, sigma, y=None):
 nuts_kernel = NUTS(eight_schools_cauchy_prior)
 ```
 
-Pass the model to the `SBC` class, set the number of simulations to 100, and run the simulations. For numpyro model, 
+Pass the model to the `SBC` class, set the number of simulations to 100, and run the simulations. For numpyro model,
 we pass in the ``data_dir`` parameter.
 
 ```{jupyter-execute}
@@ -147,8 +146,7 @@ To compare the prior and posterior distributions, we will plot the results.
 We expect a uniform distribution, the gray envelope corresponds to the 94% credible interval.
 
 ```{jupyter-execute}
-plot_ecdf_pit(sbc.simulations, 
-              pc_kwargs={'col_wrap':4},
-              plot_kwargs={"xlabel":False}
-)
+plot_ecdf_pit(sbc.simulations,
+              visuals={"xlabel":False},
+);
 ```
