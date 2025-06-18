@@ -18,7 +18,7 @@ In our case, we will take a PyMC model and pass it into our ``SBC`` class.
 
 .. code-block:: python
 
-    from arviz_plots import plot_ecdf_pit, style
+    from arviz_plots import plot_ecdf_pit
     import numpy as np
     import pymc as pm
 
