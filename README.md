@@ -56,6 +56,6 @@ should be close to uniform and within the oval envelope.
 
 ## References
 
-- Talts, S., Betancourt, M., Simpson, D., Vehtari A., and Gelman A. (2018). “Validating Bayesian Inference Algorithms with Simulation-Based Calibration.” `arXiv:1804.06788 <https://doi.org/10.48550/arXiv.1804.06788>`_.
-- Modrák, M., Moon, A, Kim, S., Bürkner, P., Huurre, N., Faltejsková, K., Gelman A and Vehtari, A.(2023). "Simulation-based calibration checking for Bayesian computation: The choice of test quantities shapes sensitivity. Bayesian Analysis, advance publication, DOI: `10.1214/23-BA1404 <https://projecteuclid.org/journals/bayesian-analysis/volume--1/issue--1/Simulation-Based-Calibration-Checking-for-Bayesian-Computation--The-Choice/10.1214/23-BA1404.full>`_
-- Säilynoja, T., Marvin Schmitt, Paul-Christian Bürkner and Aki Vehtari (2025). "Posterior SBC: Simulation-Based Calibration Checking Conditional on Data" `arXiv:2502.03279 <https://doi.org/10.48550/arXiv.2502.03279>`_.
+- Talts, S., Betancourt, M., Simpson, D., Vehtari A., and Gelman A. (2018). [Validating Bayesian Inference Algorithms with Simulation-Based Calibration](https://doi.org/10.48550/arXiv.1804.06788).
+- Modrák, M., Moon, A, Kim, S., Bürkner, P., Huurre, N., Faltejsková, K., Gelman A and Vehtari, A.(2023). [Simulation-based calibration checking for Bayesian computation: The choice of test quantities shapes sensitivity](https://doi.org/10.1214/23-BA1404). Bayesian Analysis.
+- Säilynoja, T., Marvin Schmitt, Paul-Christian Bürkner and Aki Vehtari (2025). [Posterior SBC: Simulation-Based Calibration Checking Conditional on Data](https://doi.org/10.48550/arXiv.2502.03279).
