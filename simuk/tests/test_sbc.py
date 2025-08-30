@@ -59,12 +59,14 @@ def eight_schools_cauchy_prior_no_observed(J, sigma, y=None):
 
 
 # Custom simulator functions
-def centered_eight_simulator(theta, **kwargs):
-    return {"y": np.random.normal(theta, sigma)}
+def centered_eight_simulator(theta, seed, **kwargs):
+    rng = np.random.default_rng(seed)
+    return {"y": rng.normal(theta, sigma)}
 
 
-def bmb_simulator(mu, sigma, **kwargs):
-    return {"y": np.random.normal(mu, sigma)}
+def bmb_simulator(mu, sigma, seed, **kwargs):
+    rng = np.random.default_rng(seed)
+    return {"y": rng.normal(mu, sigma)}
 
 
 # --- Tests with observed variables ---

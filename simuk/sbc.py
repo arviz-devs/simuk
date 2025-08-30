@@ -62,7 +62,7 @@ class SBC:
         an MCMC Kernel model.
         simulator : callable
             A custom simulator function that takes as input the model parameters and
-            returns a dictionary of named observations.
+            a int parameter named `seed`, and returns a dictionary of named observations.
 
     Example
     -------
@@ -127,13 +127,13 @@ class SBC:
         if simulator is not None and self.observed_vars:
             logging.warning(
                 "Provided model contains both observed variables and a simulator. "
-                "Ignoring observed variables and using simulator instead."
+                "Ignoring observed variables and using the simulator instead."
             )
         if simulator is None and not self.observed_vars and self.engine == "pymc":
             # Ideally, we could raise an error early for `numpyro` also,
             # but `factor` also produces 'observed_vars'
             raise ValueError(
-                "There are no observed variables and PyMC will not generate prior "
+                "There are no observed variables, and PyMC will not generate prior "
                 "predictive samples. Either change the model or specify a simulator "
                 "with the `simulator` argument."
             )
@@ -178,6 +178,7 @@ class SBC:
             prior_pred = []
             for i in range(prior.sizes["sample"]):
                 params = {var: prior[var].isel(sample=i).values for var in prior.data_vars}
+                params["seed"] = self._seeds[i]
                 try:
                     res = self.simulator(**params)
                     assert isinstance(
@@ -214,9 +215,11 @@ class SBC:
         samples = predictive(jax.random.PRNGKey(self._seeds[0]), **free_vars_data)
         prior = {k: v for k, v in samples.items() if k not in self.observed_vars}
         if self.simulator:
-            results = [
-                self.simulator(**dict(zip(prior.keys(), values))) for values in zip(*prior.values())
-            ]
+            results = []
+            for i, vals in enumerate(zip(*prior.values())):
+                params = dict(zip(prior.keys(), vals))
+                params["seed"] = self._seeds[i]
+                results.append(self.simulator(**params))
             prior_pred = dict(zip(results[0].keys(), zip(*[result.values() for result in results])))
         else:
             prior_pred = {k: v for k, v in samples.items() if k in self.observed_vars}
