@@ -6,6 +6,7 @@ import numpyro.distributions as dist
 import pandas as pd
 import pymc as pm
 import pytest
+from numba import njit
 from numpyro.infer import NUTS
 
 import simuk
@@ -62,6 +63,16 @@ def eight_schools_cauchy_prior_no_observed(J, sigma, y=None):
 def centered_eight_simulator(theta, seed, **kwargs):
     rng = np.random.default_rng(seed)
     return {"y": rng.normal(theta, sigma)}
+
+
+@njit
+def centered_eight_jitted_simulator(tau, mu, theta, seed):
+    # Some expensive computation
+    n = theta.shape[0]
+    y = np.zeros(n)
+    for i in range(n):
+        y[i] = theta[i]
+    return {"y": y}
 
 
 def bmb_simulator(mu, sigma, seed, **kwargs):

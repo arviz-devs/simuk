@@ -16,10 +16,12 @@ try:
 except ImportError:
     pass
 
+from collections.abc import Mapping
+
 import numpy as np
-import xarray as xr
-from arviz_base import extract, from_dict, dict_to_dataset, from_numpyro
+from arviz_base import dict_to_dataset, extract, from_dict, from_numpyro
 from tqdm import tqdm
+
 
 class quiet_logging:
     """Turn off logging for PyMC, Bambi and PyTensor."""
@@ -181,17 +183,18 @@ class SBC:
                 try:
                     res = self.simulator(**params)
                     assert isinstance(
-                        res, dict
+                        res, Mapping
                     ), f"Simulator must return a dictionary, got {type(res)}"
                     prior_pred.append(res)
                 except Exception as e:
                     raise ValueError(
                         f"Error generating prior predictive sample with parameters {params}: {e}."
                     )
-            prior_pred = dict_to_dataset({key: np.stack([pp[key] for pp in prior_pred]) for key in prior_pred[0]},
-                    sample_dims=["sample"],
-                    coords={**prior.coords},
-                    )
+            prior_pred = dict_to_dataset(
+                {key: np.stack([pp[key] for pp in prior_pred]) for key in prior_pred[0]},
+                sample_dims=["sample"],
+                coords={**prior.coords},
+            )
         return prior, prior_pred
 
     def _get_prior_predictive_samples_numpyro(self):
