@@ -18,9 +18,8 @@ except ImportError:
 
 import numpy as np
 import xarray as xr
-from arviz_base import extract, from_dict, from_numpyro
+from arviz_base import extract, from_dict, dict_to_dataset, from_numpyro
 from tqdm import tqdm
-
 
 class quiet_logging:
     """Turn off logging for PyMC, Bambi and PyTensor."""
