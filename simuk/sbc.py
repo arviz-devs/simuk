@@ -189,23 +189,10 @@ class SBC:
                     raise ValueError(
                         f"Error generating prior predictive sample with parameters {params}: {e}."
                     )
-            # --- Convert list of dicts to xarray.Dataset ---
-            # Get the sample coordinate (keeps chain/draw MultiIndex intact)
-            sample_coord = prior.coords["sample"]
-
-            # Collect variables into dict-of-arrays, stacking along 'sample'
-            data_vars = {}
-            for key in prior_pred[0].keys():
-                stacked = np.stack([np.asarray(d[key]) for d in prior_pred], axis=-1)
-                dims = [f"{key}_dim_{i}" for i in range(stacked.ndim - 1)] + ["sample"]
-                data_vars[key] = (dims, stacked)
-
-            # Build dataset
-            prior_pred = xr.Dataset(
-                data_vars=data_vars,
-                coords={**{k: v for k, v in prior.coords.items()}, "sample": sample_coord},
-                attrs=prior.attrs,
-            )
+            prior_pred = dict_to_dataset({key: np.stack([pp[key] for pp in prior_pred]) for key in prior_pred[0]},
+                    sample_dims=["sample"],
+                    coords={**prior.coords},
+                    )
         return prior, prior_pred
 
     def _get_prior_predictive_samples_numpyro(self):
@@ -220,7 +207,7 @@ class SBC:
                 params = dict(zip(prior.keys(), vals))
                 params["seed"] = self._seeds[i]
                 results.append(self.simulator(**params))
-            prior_pred = dict(zip(results[0].keys(), zip(*[result.values() for result in results])))
+            prior_pred = {key: [result[key] for result in results] for key in results[0]}
         else:
             prior_pred = {k: v for k, v in samples.items() if k in self.observed_vars}
         return prior, prior_pred
