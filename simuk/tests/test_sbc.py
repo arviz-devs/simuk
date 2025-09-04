@@ -111,13 +111,26 @@ def test_sbc_numpyro_with_observed_data():
         (centered_eight, centered_eight_simulator),
         # Case 2: Only simulator function present
         (centered_eight_no_observed, centered_eight_simulator),
-        # Case 3: bambi model with custom simulator
-        (bmb_model, bmb_simulator),
     ],
 )
 def test_sbc_with_custom_simulator(model, simulator):
     sbc = simuk.SBC(
         model, num_simulations=10, sample_kwargs={"draws": 5, "tune": 5}, simulator=simulator
+    )
+    sbc.run_simulations()
+    assert "prior_sbc" in sbc.simulations
+
+
+@pytest.mark.skipif(
+    hasattr(bmb, "__version__") and tuple(map(int, bmb.__version__.split("."))) <= (0, 14),
+    reason="requires bambi version > 0.14",
+)
+def test_sbc_bambi_with_custom_simulator():
+    sbc = simuk.SBC(
+        bmb_model,
+        num_simulations=10,
+        sample_kwargs={"draws": 5, "tune": 5},
+        simulator=bmb_simulator,
     )
     sbc.run_simulations()
     assert "prior_sbc" in sbc.simulations
