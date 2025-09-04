@@ -16,8 +16,10 @@ try:
 except ImportError:
     pass
 
+from collections.abc import Mapping
+
 import numpy as np
-from arviz_base import extract, from_dict, from_numpyro
+from arviz_base import dict_to_dataset, extract, from_dict, from_numpyro
 from tqdm import tqdm
 
 
@@ -59,6 +61,9 @@ class SBC:
     data_dir : dict
         Keyword arguments passed to numpyro model, intended for use when providing
         an MCMC Kernel model.
+        simulator : callable
+            A custom simulator function that takes as input the model parameters and
+            a int parameter named `seed`, and must return a dictionary of named observations.
 
     Example
     -------
@@ -73,7 +78,15 @@ class SBC:
         sbc.run_simulations()
     """
 
-    def __init__(self, model, num_simulations=1000, sample_kwargs=None, seed=None, data_dir=None):
+    def __init__(
+        self,
+        model,
+        num_simulations=1000,
+        sample_kwargs=None,
+        seed=None,
+        data_dir=None,
+        simulator=None,
+    ):
         if hasattr(model, "basic_RVs") and isinstance(model, pm.Model):
             self.engine = "pymc"
             self.model = model
@@ -110,6 +123,22 @@ class SBC:
         self._extract_variable_names()
         self.simulations = {name: [] for name in self.var_names}
         self._simulations_complete = 0
+        if simulator is not None and not callable(simulator):
+            raise ValueError("simulator should be a function or None")
+        if simulator is not None and self.observed_vars:
+            logging.warning(
+                "Provided model contains both observed variables and a simulator. "
+                "Ignoring observed variables and using the simulator instead."
+            )
+        if simulator is None and not self.observed_vars and self.engine == "pymc":
+            # Ideally, we could raise an error early for `numpyro` also,
+            # but `factor` also produces 'observed_vars'
+            raise ValueError(
+                "There are no observed variables, and PyMC will not generate prior "
+                "predictive samples. Either change the model or specify a simulator "
+                "with the `simulator` argument."
+            )
+        self.simulator = simulator
 
     def _extract_variable_names(self):
         """Extract observed and free variables from the model."""
@@ -142,8 +171,30 @@ class SBC:
             idata = pm.sample_prior_predictive(
                 samples=self.num_simulations, random_seed=self._seeds[0]
             )
-            prior_pred = extract(idata, group="prior_predictive", keep_dataset=True)
             prior = extract(idata, group="prior", keep_dataset=True)
+            if self.simulator is None:
+                prior_pred = extract(idata, group="prior_predictive", keep_dataset=True)
+                return prior, prior_pred
+            # Deal with custom simulator
+            prior_pred = []
+            for i in range(prior.sizes["sample"]):
+                params = {var: prior[var].isel(sample=i).values for var in prior.data_vars}
+                params["seed"] = self._seeds[i]
+                try:
+                    res = self.simulator(**params)
+                    assert isinstance(
+                        res, Mapping
+                    ), f"Simulator must return a dictionary, got {type(res)}"
+                    prior_pred.append(res)
+                except Exception as e:
+                    raise ValueError(
+                        f"Error generating prior predictive sample with parameters {params}: {e}."
+                    )
+            prior_pred = dict_to_dataset(
+                {key: np.stack([pp[key] for pp in prior_pred]) for key in prior_pred[0]},
+                sample_dims=["sample"],
+                coords={**prior.coords},
+            )
         return prior, prior_pred
 
     def _get_prior_predictive_samples_numpyro(self):
@@ -152,7 +203,15 @@ class SBC:
         free_vars_data = {k: v for k, v in self.data_dir.items() if k not in self.observed_vars}
         samples = predictive(jax.random.PRNGKey(self._seeds[0]), **free_vars_data)
         prior = {k: v for k, v in samples.items() if k not in self.observed_vars}
-        prior_pred = {k: v for k, v in samples.items() if k in self.observed_vars}
+        if self.simulator:
+            results = []
+            for i, vals in enumerate(zip(*prior.values())):
+                params = dict(zip(prior.keys(), vals))
+                params["seed"] = self._seeds[i]
+                results.append(self.simulator(**params))
+            prior_pred = {key: [result[key] for result in results] for key in results[0]}
+        else:
+            prior_pred = {k: v for k, v in samples.items() if k in self.observed_vars}
         return prior, prior_pred
 
     def _get_posterior_samples(self, prior_predictive_draw):
@@ -170,7 +229,12 @@ class SBC:
         """Generate posterior samples using numpyro conditioned to a prior predictive sample."""
         mcmc = MCMC(self.numpyro_model, **self.sample_kwargs)
         rng_seed = jax.random.PRNGKey(self._seeds[self._simulations_complete])
-        free_vars_data = {k: v for k, v in self.data_dir.items() if k not in self.observed_vars}
+        # If using a custom simulator, some variables present in `prior_predictive_draw`
+        # might be missing from self.observed_vars.
+        # TODO: Not sure if the union is redundant here and perhaps prior_predictive_draw.keys()
+        # could be sufficient.
+        extended_observed_vars = set(prior_predictive_draw.keys()).union(self.observed_vars)
+        free_vars_data = {k: v for k, v in self.data_dir.items() if k not in extended_observed_vars}
         mcmc.run(rng_seed, **free_vars_data, **prior_predictive_draw)
         return from_numpyro(mcmc)["posterior"]
 

@@ -15,4 +15,3 @@ dependencies:
   - pytest>=4.4.0
   - pre-commit>=2.19
   - ruff==0.9.1
-
