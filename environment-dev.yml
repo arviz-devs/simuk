@@ -7,7 +7,7 @@ dependencies:
   - pip
   - python >= 3.11
   - pymc>=5.20.1
-  - bambi>=0.13.0
+  - bambi>=0.14.0
   - arviz>=0.20.0
   - black=22.3.0
   - click=8.0.4
@@ -15,4 +15,3 @@ dependencies:
   - pytest>=4.4.0
   - pre-commit>=2.19
   - ruff==0.9.1
-
