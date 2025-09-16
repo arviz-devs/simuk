@@ -40,6 +40,7 @@ y = 2 + np.random.normal(x, 1)
 df = pd.DataFrame({"x": x, "y": y})
 bmb_model = bmb.Model("y ~ x", df)
 
+
 # NumPyro models
 def eight_schools_cauchy_prior(J, sigma, y=None):
     mu = numpyro.sample("mu", dist.Normal(0, 5))
