@@ -11,7 +11,7 @@ kernelspec:
 
 # Simulation based calibration
 
-This example demonstrates how to use the `SBC` class for simulation-based calibration, supporting both PyMC and Bambi models.
+This example demonstrates how to use the `SBC` class for simulation-based calibration, supporting PyMC, Bambi and Numpyro models.
 
 ```{jupyter-execute}
 
@@ -66,6 +66,25 @@ plot_ecdf_pit(sbc.simulations,
 );
 ```
 
+In certain scenarios, you might want to pass a custom function to the `SBC` class to generate the data. For instance, if you aim to evaluate the effect of model misspecification by generating data from a different model than the one used for model fitting.
+
+Next, we determine the impact of occasional large deviations (outliers) by drawing from a Laplace distribution instead of a normal distribution (which we use to fit the model).
+
+```{jupyter-execute}
+def simulator(theta, seed, **kwargs):
+    rng = np.random.default_rng(seed)
+    # Here we use a Laplace distribution, but it could also be some mechanistic simulator
+    scale = sigma / np.sqrt(2)
+    return {"y": rng.laplace(theta, scale)}
+
+sbc = simuk.SBC(centered_eight,
+    num_simulations=100,
+    simulator=simulator,
+    sample_kwargs={'draws': 25, 'tune': 50})
+
+sbc.run_simulations();
+```
+
 :::::
 
 :::::{tab-item} Bambi
@@ -101,6 +120,25 @@ We expect a uniform distribution, the gray envelope corresponds to the 94% credi
 
 ```{jupyter-execute}
 plot_ecdf_pit(sbc.simulations)
+```
+
+In certain scenarios, you might want to pass a custom function to the `SBC` class to generate the data. For instance, if you aim to evaluate the effect of model misspecification by generating data from a different model than the one used for model fitting.
+
+Next, we determine the impact of occasional large deviations (outliers) by drawing from a Laplace distribution instead of a normal distribution (which we use to fit the model).
+
+```{jupyter-execute}
+def simulator(mu, seed, sigma, **kwargs):
+    rng = np.random.default_rng(seed)
+    # Here we use a Laplace distribution, but it could also be some mechanistic simulator
+    scale = sigma / np.sqrt(2)
+    return {"y": rng.laplace(mu, scale)}
+
+sbc = simuk.SBC(bmb_model,
+    num_simulations=100,
+    simulator=simulator,
+    sample_kwargs={'draws': 25, 'tune': 50})
+
+sbc.run_simulations();
 ```
 
 :::::
@@ -149,4 +187,25 @@ We expect a uniform distribution, the gray envelope corresponds to the 94% credi
 plot_ecdf_pit(sbc.simulations,
               visuals={"xlabel":False},
 );
+```
+
+In certain scenarios, you might want to pass a custom function to the `SBC` class to generate the data. For instance, if you aim to evaluate the effect of model misspecification by generating data from a different model than the one used for model fitting.
+
+Next, we determine the impact of occasional large deviations (outliers) by drawing from a Laplace distribution instead of a normal distribution (which we use to fit the model).
+
+```{jupyter-execute}
+def simulator(theta, seed, **kwargs):
+    rng = np.random.default_rng(seed)
+    # Here we use a Laplace distribution, but it could also be some mechanistic simulator
+    scale = sigma / np.sqrt(2)
+    return {"y": rng.laplace(theta, scale)}
+
+sbc = simuk.SBC(nuts_kernel,
+    sample_kwargs={"num_warmup": 50, "num_samples": 75},
+    num_simulations=100,
+    simulator=simulator,
+    data_dir={"J": 8, "sigma": sigma, "y": y}
+)
+
+sbc.run_simulations();
 ```
