@@ -61,9 +61,9 @@ class SBC:
     data_dir : dict
         Keyword arguments passed to numpyro model, intended for use when providing
         an MCMC Kernel model.
-        simulator : callable
-            A custom simulator function that takes as input the model parameters and
-            a int parameter named `seed`, and must return a dictionary of named observations.
+    simulator : callable
+        A custom simulator function that takes as input the model parameters and
+        a int parameter named `seed`, and must return a dictionary of named observations.
 
     Example
     -------
