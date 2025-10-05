@@ -18,6 +18,7 @@ except ImportError:
 
 from collections.abc import Mapping
 
+import arviz
 import numpy as np
 from arviz_base import dict_to_dataset, extract, from_dict, from_numpyro
 from tqdm import tqdm
@@ -61,9 +62,14 @@ class SBC:
     data_dir : dict
         Keyword arguments passed to numpyro model, intended for use when providing
         an MCMC Kernel model.
-        simulator : callable
-            A custom simulator function that takes as input the model parameters and
-            a int parameter named `seed`, and must return a dictionary of named observations.
+    simulator : callable
+        A custom simulator function that takes as input the model parameters and
+        a int parameter named `seed`, and must return a dictionary of named observations.
+        trace : arviz.InferenceData | numpyro.infer.mcmc.MCMC
+        Trace generated from fitting the model to the data. If provided, posterior SBC
+        (rather than prior SBC) will be performed. In this version, we aim to validate
+        the inference conditionally on observed data by drawing parameters from the
+        posterior distribution.
 
     Example
     -------
@@ -86,6 +92,7 @@ class SBC:
         seed=None,
         data_dir=None,
         simulator=None,
+        trace=None,
     ):
         if hasattr(model, "basic_RVs") and isinstance(model, pm.Model):
             self.engine = "pymc"
@@ -139,6 +146,33 @@ class SBC:
                 "with the `simulator` argument."
             )
         self.simulator = simulator
+        # Check provided trace
+        self._trace_posterior = None
+        if trace is not None:
+            if self.engine == "numpyro" and isinstance(trace, MCMC):
+                # Recall that we are not calling `arviz_base.from_dict` but `arviz.from_dict`
+                # TODO: check if this is intended or some transitions between API versions
+                trace = arviz.from_dict(trace.get_samples(group_by_chain=True))
+            if not hasattr(trace, "posterior"):
+                raise ValueError("The provided trace does not contain a `posterior` attribute.")
+            # Flatten the posterior
+            posterior = trace.posterior.stack(sample=("chain", "draw"))
+            n_draws = posterior.sizes["sample"]
+            if n_draws < self.num_simulations:
+                # TODO: We could sample with replacement from the trace.
+                # Or set num_simulations to n_draws with a warning
+                raise ValueError(
+                    f"The provided trace does not contain enough samples, "
+                    f"it contains {n_draws} draws, "
+                    f"but {self.num_simulations} are required."
+                )
+            rng = np.random.default_rng(seed)
+            sampled_indices = rng.choice(n_draws, size=self.num_simulations, replace=False)
+            posterior = posterior.isel(sample=sampled_indices)
+            # Reshape posterior to comply with PyMC requirements
+            posterior = posterior.reset_index("sample", drop=True)
+            posterior = posterior.expand_dims({"chain": [0]}).rename({"sample": "draw"})
+            self._trace_posterior = posterior
 
     def _extract_variable_names(self):
         """Extract observed and free variables from the model."""
@@ -168,50 +202,86 @@ class SBC:
     def _get_prior_predictive_samples(self):
         """Generate samples to use for the simulations."""
         with self.model:
-            idata = pm.sample_prior_predictive(
-                samples=self.num_simulations, random_seed=self._seeds[0]
-            )
-            prior = extract(idata, group="prior", keep_dataset=True)
-            if self.simulator is None:
-                prior_pred = extract(idata, group="prior_predictive", keep_dataset=True)
-                return prior, prior_pred
-            # Deal with custom simulator
-            prior_pred = []
-            for i in range(prior.sizes["sample"]):
-                params = {var: prior[var].isel(sample=i).values for var in prior.data_vars}
-                params["seed"] = self._seeds[i]
-                try:
-                    res = self.simulator(**params)
-                    assert isinstance(
-                        res, Mapping
-                    ), f"Simulator must return a dictionary, got {type(res)}"
-                    prior_pred.append(res)
-                except Exception as e:
-                    raise ValueError(
-                        f"Error generating prior predictive sample with parameters {params}: {e}."
+            # Draw parameters from prior for prior SBC
+            if self._trace_posterior is None:
+                idata = pm.sample_prior_predictive(
+                    samples=self.num_simulations, random_seed=self._seeds[0]
+                )
+                prior = extract(idata, group="prior", keep_dataset=True)
+                if self.simulator is None:
+                    prior_pred = extract(idata, group="prior_predictive", keep_dataset=True)
+                    return prior, prior_pred
+            # Draw parameters from posterior for posterior SBC
+            else:
+                # We treat the posterior as the new prior
+                prior = extract(self._trace_posterior, group="posterior", keep_dataset=True)
+                if self.simulator is None:
+                    idata = pm.sample_posterior_predictive(
+                        trace=self._trace_posterior, random_seed=self._seeds[0]
                     )
-            prior_pred = dict_to_dataset(
-                {key: np.stack([pp[key] for pp in prior_pred]) for key in prior_pred[0]},
-                sample_dims=["sample"],
-                coords={**prior.coords},
-            )
+                    prior_pred = extract(idata, group="posterior_predictive", keep_dataset=True)
+                    return prior, prior_pred
+        # Deal with custom simulator
+        prior_pred = []
+        for i in range(prior.sizes["sample"]):
+            params = {var: prior[var].isel(sample=i).values for var in prior.data_vars}
+            params["seed"] = self._seeds[i]
+            try:
+                res = self.simulator(**params)
+                assert isinstance(
+                    res, Mapping
+                ), f"Simulator must return a dictionary, got {type(res)}"
+                prior_pred.append(res)
+            except Exception as e:
+                raise ValueError(
+                    f"Error generating prior predictive sample with parameters {params}: {e}."
+                )
+        prior_pred = dict_to_dataset(
+            {key: np.stack([pp[key] for pp in prior_pred]) for key in prior_pred[0]},
+            sample_dims=["sample"],
+            coords={**prior.coords},
+        )
         return prior, prior_pred
 
     def _get_prior_predictive_samples_numpyro(self):
         """Generate samples to use for the simulations using numpyro."""
-        predictive = Predictive(self.model, num_samples=self.num_simulations)
-        free_vars_data = {k: v for k, v in self.data_dir.items() if k not in self.observed_vars}
-        samples = predictive(jax.random.PRNGKey(self._seeds[0]), **free_vars_data)
-        prior = {k: v for k, v in samples.items() if k not in self.observed_vars}
-        if self.simulator:
-            results = []
-            for i, vals in enumerate(zip(*prior.values())):
-                params = dict(zip(prior.keys(), vals))
-                params["seed"] = self._seeds[i]
-                results.append(self.simulator(**params))
-            prior_pred = {key: [result[key] for result in results] for key in results[0]}
+        # Draw parameters from prior for prior SBC
+        if self._trace_posterior is None:
+            predictive = Predictive(self.model, num_samples=self.num_simulations)
+            free_vars_data = {k: v for k, v in self.data_dir.items() if k not in self.observed_vars}
+            samples = predictive(jax.random.PRNGKey(self._seeds[0]), **free_vars_data)
+            prior = {k: v for k, v in samples.items() if k not in self.observed_vars}
+            if self.simulator is None:
+                prior_pred = {k: v for k, v in samples.items() if k in self.observed_vars}
+        # Draw parameters from posterior for posterior SBC
         else:
-            prior_pred = {k: v for k, v in samples.items() if k in self.observed_vars}
+            # Use the flattened posterior as prior samples
+            prior = {}
+            for var_name in self.var_names:
+                if var_name in self._trace_posterior:
+                    # Convert from xarray to numpy array
+                    # TODO: this feels like a hack to maintain the shape of
+                    # the array one gets if running mcmc.get_samples().
+                    # Perhaps consider an alternative approach
+                    prior[var_name] = np.squeeze(
+                        self._trace_posterior[var_name].to_numpy(), axis=0
+                    ).T
+            if self.simulator is None:
+                predictive = Predictive(self.model, posterior_samples=prior)
+                free_vars_data = {
+                    k: v for k, v in self.data_dir.items() if k not in self.observed_vars
+                }
+                pred_samples = predictive(jax.random.PRNGKey(self._seeds[0]), **free_vars_data)
+                prior_pred = {k: v for k, v in pred_samples.items() if k in self.observed_vars}
+        if self.simulator is None:
+            return prior, prior_pred
+        # If using custom simulator, we don't have to differentiate between prior and posterior SBC
+        results = []
+        for i, vals in enumerate(zip(*prior.values())):
+            params = dict(zip(prior.keys(), vals))
+            params["seed"] = self._seeds[i]
+            results.append(self.simulator(**params))
+        prior_pred = {key: [result[key] for result in results] for key in results[0]}
         return prior, prior_pred
 
     def _get_posterior_samples(self, prior_predictive_draw):
