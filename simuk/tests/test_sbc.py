@@ -6,8 +6,9 @@ import numpyro.distributions as dist
 import pandas as pd
 import pymc as pm
 import pytest
+from jax import random
 from numba import njit
-from numpyro.infer import NUTS
+from numpyro.infer import MCMC, NUTS
 
 import simuk
 
@@ -179,3 +180,123 @@ def test_sbc_numpyro_fail_no_observed_variable():
             sample_kwargs={"num_warmup": 50, "num_samples": 25},
         )
         sbc.run_simulations()
+
+
+# Test posterior SBC
+def test_posterior_sbc_pymc_with_observed_variables():
+    with centered_eight:
+        trace = pm.sample(draws=100, tune=100, chains=4)
+    sbc = simuk.SBC(
+        centered_eight,
+        trace=trace,
+        num_simulations=10,
+        sample_kwargs={"draws": 5, "tune": 5},
+    )
+    sbc.run_simulations()
+    assert "prior_sbc" in sbc.simulations
+
+
+def test_posterior_sbc_pymc_with_custom_simulator():
+    with centered_eight:
+        trace = pm.sample(draws=100, tune=100, chains=4)
+    sbc = simuk.SBC(
+        centered_eight,
+        trace=trace,
+        num_simulations=10,
+        simulator=centered_eight_simulator,
+        sample_kwargs={"draws": 5, "tune": 5},
+    )
+    sbc.run_simulations()
+    assert "prior_sbc" in sbc.simulations
+
+
+def test_posterior_sbc_bambi_with_observed_variables():
+    trace = bmb_model.fit(num_samples=25, tune=50)
+    sbc = simuk.SBC(
+        bmb_model,
+        trace=trace,
+        num_simulations=10,
+        sample_kwargs={"draws": 5, "tune": 5},
+    )
+    sbc.run_simulations()
+    assert "prior_sbc" in sbc.simulations
+
+
+@pytest.mark.skipif(
+    hasattr(bmb, "__version__") and tuple(map(int, bmb.__version__.split("."))) <= (0, 14),
+    reason="requires bambi version > 0.14",
+)
+def test_posterior_sbc_bambi_with_custom_simulator():
+    # TODO: The names of the parameters drawn using `bmb_model.prior_predictive`
+    # or `bmb_model.fit` are different from the ones you get if you access the
+    # `pymc` backend model. Eventually, we should decide how to handle this.
+    bmb_model.build()
+    model = bmb_model.backend.model
+    with model:
+        trace = pm.sample(draws=100, tune=100, chains=4)
+    sbc = simuk.SBC(
+        model,
+        trace=trace,
+        num_simulations=10,
+        sample_kwargs={"draws": 5, "tune": 5},
+        simulator=bmb_simulator,
+    )
+    sbc.run_simulations()
+    assert "prior_sbc" in sbc.simulations
+
+
+def test_posterior_sbc_numpyro_with_observed_variables():
+    nuts_kernel = NUTS(eight_schools_cauchy_prior)
+    mcmc = MCMC(nuts_kernel, num_warmup=25, num_samples=50)
+    data_dir = {"J": 8, "sigma": sigma, "y": data}
+    mcmc.run(random.PRNGKey(0), **data_dir)
+    sbc = simuk.SBC(
+        nuts_kernel,
+        trace=mcmc,
+        num_simulations=10,
+        sample_kwargs={"num_warmup": 50, "num_samples": 25},
+        data_dir=data_dir,
+    )
+    sbc.run_simulations()
+    assert "prior_sbc" in sbc.simulations
+
+
+def test_posterior_sbc_numpyro_with_custom_simulator():
+    nuts_kernel = NUTS(eight_schools_cauchy_prior)
+    mcmc = MCMC(nuts_kernel, num_warmup=25, num_samples=50)
+    data_dir = {"J": 8, "sigma": sigma, "y": data}
+    mcmc.run(random.PRNGKey(0), **data_dir)
+    sbc = simuk.SBC(
+        nuts_kernel,
+        trace=mcmc,
+        num_simulations=10,
+        sample_kwargs={"num_warmup": 50, "num_samples": 25},
+        data_dir=data_dir,
+        simulator=centered_eight_simulator,
+    )
+    sbc.run_simulations()
+    assert "prior_sbc" in sbc.simulations
+
+
+# --- Error handling tests posterior SBC ---
+def test_posterior_sbc_fail_if_not_enough_samples():
+    with pytest.raises(ValueError, match="does not contain enough samples"):
+        with centered_eight:
+            # Trace is too short
+            trace = pm.sample(draws=10, tune=10, chains=4)
+            _ = simuk.SBC(
+                centered_eight,
+                trace=trace,
+                num_simulations=1000,
+                sample_kwargs={"draws": 5, "tune": 5},
+            )
+
+
+def test_posterior_sbc_fail_if_wrong_trace():
+    with pytest.raises(ValueError, match="does not contain a `posterior`"):
+        with centered_eight:
+            _ = simuk.SBC(
+                centered_eight,
+                trace={},
+                num_simulations=100,
+            )
