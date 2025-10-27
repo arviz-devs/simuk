@@ -6,8 +6,9 @@ import numpyro.distributions as dist
 import pandas as pd
 import pymc as pm
 import pytest
+from jax import random
 from numba import njit
-from numpyro.infer import NUTS
+from numpyro.infer import MCMC, NUTS
 
 import simuk
 
@@ -179,3 +180,23 @@ def test_sbc_numpyro_fail_no_observed_variable():
             sample_kwargs={"num_warmup": 50, "num_samples": 25},
         )
         sbc.run_simulations()
+
+
+# Test posterior SBC
+
+with pm.Model() as posterior_model:
+    mu = pm.Normal("mu", mu=0, sigma=5)
+    y_obs = pm.Normal("y", mu=mu, sigma=1.0, observed=data)
+
+
+def test_posterior_sbc_pymc_with_observed_variables():
+    with posterior_model:
+        trace = pm.sample(draws=100, tune=100, chains=4)
+    sbc = simuk.SBC(
+        posterior_model,
+        trace=trace,
+        num_simulations=10,
+        sample_kwargs={"draws": 5, "tune": 5},
+    )
+    sbc.run_simulations()
+    assert "posterior_sbc" in sbc.simulations
