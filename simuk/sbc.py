@@ -63,7 +63,7 @@ class SBC:
         an MCMC Kernel model.
         simulator : callable
             A custom simulator function that takes as input the model parameters and
-            a int parameter named `seed`, and must return a dictionary of named observations.
+            an int parameter named `seed`, and must return a dictionary of named observations.
 
     Example
     -------
