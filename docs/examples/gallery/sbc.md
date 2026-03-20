@@ -11,8 +11,6 @@ kernelspec:
 
 # Simulation based calibration
 
-This example demonstrates how to use the `SBC` class for simulation-based calibration, supporting both PyMC and Bambi models.
-
 ```{jupyter-execute}
 
 from arviz_plots import plot_ecdf_pit, style
@@ -21,11 +19,15 @@ import simuk
 style.use("arviz-variat")
 ```
 
+## Out-of-the-box SBC
+This example demonstrates how to use the `SBC` class for simulation-based calibration, supporting PyMC, Bambi and Numpyro models. By default, the generative model implied by the probabilistic model is used.
+
+
 ::::::{tab-set}
 :class: full-width
 
 :::::{tab-item} PyMC
-:sync: pymc
+:sync: pymc_default
 
 First, define a PyMC model. In this example, we will use the centered eight schools model.
 
@@ -69,7 +71,7 @@ plot_ecdf_pit(sbc.simulations,
 :::::
 
 :::::{tab-item} Bambi
-:sync: bambi
+:sync: bambi_default
 
 Now, we define a Bambi Model.
 
@@ -106,7 +108,7 @@ plot_ecdf_pit(sbc.simulations)
 :::::
 
 :::::{tab-item} Numpyro
-:sync: numpyro
+:sync: numpyro_default
 
 We define a Numpyro Model, we use the centered eight schools model.
 
@@ -150,3 +152,89 @@ plot_ecdf_pit(sbc.simulations,
               visuals={"xlabel":False},
 );
 ```
+
+:::::
+
+::::::
+
+## Custom simulator SBC
+
+::::::{tab-set}
+:class: full-width
+
+:::::{tab-item} PyMC
+:sync: pymc_custom
+
+In certain scenarios, you might want to pass a custom function to the `SBC` class to generate the data. For instance, if you aim to evaluate the effect of model misspecification by generating data from a different model than the one used for model fitting.
+
+Next, we determine the impact of occasional large deviations (outliers) by drawing from a Laplace distribution instead of a normal distribution (which we use to fit the model).
+
+```{jupyter-execute}
+def simulator(theta, seed, **kwargs):
+    rng = np.random.default_rng(seed)
+    # Here we use a Laplace distribution, but it could also be some mechanistic simulator
+    scale = sigma / np.sqrt(2)
+    return {"y": rng.laplace(theta, scale)}
+
+sbc = simuk.SBC(centered_eight,
+    num_simulations=100,
+    simulator=simulator,
+    sample_kwargs={'draws': 25, 'tune': 50})
+
+sbc.run_simulations();
+```
+
+:::::
+
+:::::{tab-item} Bambi
+:sync: bambi_custom
+
+In certain scenarios, you might want to pass a custom function to the `SBC` class to generate the data. For instance, if you aim to evaluate the effect of model misspecification by generating data from a different model than the one used for model fitting.
+
+Next, we determine the impact of occasional large deviations (outliers) by drawing from a Laplace distribution instead of a normal distribution (which we use to fit the model).
+
+```{jupyter-execute}
+def simulator(mu, seed, sigma, **kwargs):
+    rng = np.random.default_rng(seed)
+    # Here we use a Laplace distribution, but it could also be some mechanistic simulator
+    scale = sigma / np.sqrt(2)
+    return {"y": rng.laplace(mu, scale)}
+
+sbc = simuk.SBC(bmb_model,
+    num_simulations=100,
+    simulator=simulator,
+    sample_kwargs={'draws': 25, 'tune': 50})
+
+sbc.run_simulations();
+```
+
+:::::
+
+
+:::::{tab-item} Numpyro
+:sync: numpyro_custom
+
+In certain scenarios, you might want to pass a custom function to the `SBC` class to generate the data. For instance, if you aim to evaluate the effect of model misspecification by generating data from a different model than the one used for model fitting.
+
+Next, we determine the impact of occasional large deviations (outliers) by drawing from a Laplace distribution instead of a normal distribution (which we use to fit the model).
+
+```{jupyter-execute}
+def simulator(theta, seed, **kwargs):
+    rng = np.random.default_rng(seed)
+    # Here we use a Laplace distribution, but it could also be some mechanistic simulator
+    scale = sigma / np.sqrt(2)
+    return {"y": rng.laplace(theta, scale)}
+
+sbc = simuk.SBC(nuts_kernel,
+    sample_kwargs={"num_warmup": 50, "num_samples": 75},
+    num_simulations=100,
+    simulator=simulator,
+    data_dir={"J": 8, "sigma": sigma, "y": y}
+)
+
+sbc.run_simulations();
+```
+
+:::::
+
+::::::
