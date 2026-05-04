@@ -206,6 +206,7 @@ class SBC:
         augment_observed=None,
         update_data=None,
         param_transform=None,
+        progress_bar=True,
     ):
         if hasattr(model, "basic_RVs") and isinstance(model, pm.Model):
             self.engine = "pymc"
@@ -230,6 +231,8 @@ class SBC:
 
         if method == "posterior" and self.engine != "pymc":
             raise NotImplementedError("Currently, Posterior SBC is only implemented for PyMC")
+
+        self.progress_bar = progress_bar
 
         if sample_kwargs is None:
             sample_kwargs = {}
@@ -543,6 +546,7 @@ class SBC:
                     thinned_idata,
                     extend_inferencedata=True,
                     random_seed=self._seeds[0],
+                    progressbar=self.progress_bar,
                 )
                 posterior_pred = extract(
                     thinned_idata, group="posterior_predictive", keep_dataset=True
@@ -668,6 +672,7 @@ class SBC:
         progress = tqdm(
             initial=self._simulations_complete,
             total=self.num_simulations,
+            disable=not self.progress_bar,
         )
 
         if self.method == "prior":
@@ -707,7 +712,7 @@ class SBC:
                 self._simulations_complete += 1
                 progress.update()
         except Exception as e:
-            logging.error(f"Stopping simulation. An error occurred during simulations: {e}")
+            logging.error(f"Stopping simulation. An error occurred during simulations:\n {e}")
         finally:
             if self._simulations_complete > 0:
                 self.compute_rank_statistics()
