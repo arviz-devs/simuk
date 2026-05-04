@@ -56,7 +56,7 @@ from the augmented posterior $\pi(\theta \mid y_i, y_{\text{obs}})$.
 Therefore the rank statistics should be **uniformly distributed** if the inference
 is calibrated.
 
-## Example: Normal model
+## Example: Linear Regression Model
 
 ### Define the model
 
@@ -152,6 +152,7 @@ sbc = simuk.SBC(
     num_simulations=50,
     seed=random_seed,
     sample_kwargs={"chains": 4, "draws": 50, "tune": 50},
+    progress_bar=False,
 )
 
 sbc.run_simulations();
@@ -202,6 +203,7 @@ skewed_sbc = simuk.SBC(
     update_data=update_data,
     num_simulations=50,
     sample_kwargs={"chains": 4, "draws": 50, "tune": 50},
+    progress_bar=False,
 )
 
 skewed_sbc.run_simulations()
