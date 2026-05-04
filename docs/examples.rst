@@ -12,7 +12,7 @@ The gallery below presents examples that demonstrate the use of Simuk.
       :shadow: none
       :class-card: example-gallery
 
-      .. image:: examples/img/sbc.png
+      .. image:: examples/img/prior_sbc.png
          :alt: Prior SBC
 
       +++
@@ -24,5 +24,7 @@ The gallery below presents examples that demonstrate the use of Simuk.
       :shadow: none
       :class-card: example-gallery
 
+      .. image:: examples/img/posterior_sbc.png
+         :alt: Posterior SBC
       +++
       Posterior SBC
