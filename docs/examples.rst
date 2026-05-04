@@ -13,7 +13,16 @@ The gallery below presents examples that demonstrate the use of Simuk.
       :class-card: example-gallery
 
       .. image:: examples/img/sbc.png
-         :alt: SBC
+         :alt: Prior SBC
 
       +++
-      SBC
+      Prior SBC
+
+   .. grid-item-card::
+      :link: ./examples/gallery/posterior_sbc.html
+      :text-align: center
+      :shadow: none
+      :class-card: example-gallery
+
+      +++
+      Posterior SBC
