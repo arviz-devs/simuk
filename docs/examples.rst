@@ -7,7 +7,7 @@ The gallery below presents examples that demonstrate the use of Simuk.
    :gutter: 2 2 3 3
 
    .. grid-item-card::
-      :link: ./examples/gallery/sbc.html
+      :link: ./examples/gallery/prior_sbc.html
       :text-align: center
       :shadow: none
       :class-card: example-gallery
