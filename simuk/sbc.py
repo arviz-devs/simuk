@@ -266,6 +266,14 @@ class SBC:
             initial=self._simulations_complete,
             total=self.num_simulations,
         )
+
+        # if simulator is used, ignore observed_vars
+        if self.simulator is not None:
+            self.observed_vars = list(prior_pred.data_vars)
+            self.var_names = list(filter(lambda var_name: var_name not in self.observed_vars,
+                                    list(prior.data_vars)))
+            self.simulations = {var_name: [] for var_name in self.var_names}
+            
         try:
             while self._simulations_complete < self.num_simulations:
                 idx = self._simulations_complete
@@ -297,6 +305,12 @@ class SBC:
             initial=self._simulations_complete,
             total=self.num_simulations,
         )
+        # if simulator is used, ignore observed_vars
+        if self.simulator is not None:
+            self.observed_vars = list(prior_pred.keys())
+            self.var_names = list(filter(lambda var_name: var_name not in self.observed_vars,
+                                    list(prior.keys())))
+            self.simulations = {var_name: [] for var_name in self.var_names}
         try:
             while self._simulations_complete < self.num_simulations:
                 idx = self._simulations_complete
