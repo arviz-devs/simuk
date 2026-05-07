@@ -9,7 +9,7 @@ kernelspec:
   name: python3
 ---
 
-# Simulation based calibration
+# Prior Simulation based calibration
 
 ```{jupyter-execute}
 
@@ -19,8 +19,8 @@ import simuk
 style.use("arviz-variat")
 ```
 
-## Out-of-the-box SBC
-This example demonstrates how to use the `SBC` class for simulation-based calibration, supporting PyMC, Bambi and Numpyro models. By default, the generative model implied by the probabilistic model is used.
+## Out-of-the-box Prior SBC
+This example demonstrates how to use the `SBC` class for prior simulation-based calibration, supporting PyMC, Bambi and Numpyro models. By default, the generative model implied by the probabilistic model is used.
 
 
 ::::::{tab-set}
