@@ -717,8 +717,7 @@ class SBC:
         finally:
             if self._simulations_complete > 0:
                 self.compute_rank_statistics()
-            if self._simulations_complete > 0:
-                self.compute_rank_statistics()
+
             progress.close()
 
     @quiet_logging("numpyro")
