@@ -314,7 +314,7 @@ class SBC:
                             < param_transform(name, self.ref_params[name][idx])
                         ).sum(axis=0)
                     )
-                else:
+                elif self.engine == "bambi" or self.engine == "pymc":
                     transformed_posterior = np.array(
                         [
                             param_transform(name, posterior[name].isel(sample=i).values)
