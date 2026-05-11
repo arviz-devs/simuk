@@ -371,7 +371,6 @@ class SBC:
             progress.close()
 
     @quiet_logging("numpyro")
-    @quiet_logging("numpyro")
     def _run_simulations_numpyro(self):
         """Run all the simulations for Numpyro Model."""
         prior, prior_pred = self._get_prior_predictive_samples_numpyro()
