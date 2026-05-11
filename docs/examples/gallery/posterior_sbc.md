@@ -218,7 +218,7 @@ The results indicate a clear deviation from uniformity, with the ECDF lines fall
 plot_ecdf_pit(skewed_sbc.simulations, group="posterior_sbc", visuals={"xlabel": False})
 ```
 
-We shall also replot the original Posterior SBC results for comparison using `compute_rank_statistics` without need to re-run the simulations.
+We shall also replot the original Posterior SBC results using the same quantity using `compute_rank_statistics`. This allows us to compare the results without need to re-run the simulations.
 
 ```{jupyter-execute}
 
