@@ -450,6 +450,6 @@ class SBC:
                 self._simulations_complete += 1
                 progress.update()
         finally:
-            if self._simulations_complete > 0:
+            if self._simulations_complete:
                 self.compute_rank_statistics()
             progress.close()
