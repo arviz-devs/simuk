@@ -332,7 +332,7 @@ class SBC:
                         < transform(name, self.ref_params[name][simulation_idx])
                     ).sum(axis=0)
                 )
-            elif self.engine == "bambi" or self.engine == "pymc":
+            elif self.engine in ["bambi", "pymc"]:
                 transformed_posterior = np.array(
                     [
                         transform(name, posterior[name].isel(sample=i).values)
@@ -424,5 +424,5 @@ class SBC:
                         for k, v in self.simulations.items()
                     }
                     self._convert_to_datatree()
-                    
+
             progress.close()
