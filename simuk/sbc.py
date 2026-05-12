@@ -182,9 +182,9 @@ class SBC:
                 params["seed"] = self._seeds[i]
                 try:
                     res = self.simulator(**params)
-                    assert isinstance(
-                        res, Mapping
-                    ), f"Simulator must return a dictionary, got {type(res)}"
+                    assert isinstance(res, Mapping), (
+                        f"Simulator must return a dictionary, got {type(res)}"
+                    )
                     prior_pred.append(res)
                 except Exception as e:
                     raise ValueError(

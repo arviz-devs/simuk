@@ -3,6 +3,6 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python >= 3.11
+  - python >= 3.13
   - pymc>=5.20.1
   - arviz>=0.20.0

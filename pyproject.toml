@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "simuk"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = {file = "LICENSE"}
 authors = [
     {name = "ArviZ team", email = "arviz.devs@gmail.com"}
@@ -18,8 +18,9 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dynamic = ["version"]
 description = "Simulation based calibration and generation of synthetic data."
@@ -36,9 +37,6 @@ source = "https://github.com/arviz-devs/simuk"
 tracker = "https://github.com/arviz-devs/simuk/issues"
 funding = "https://opencollective.com/arviz"
 
-
-[tool.black]
-line-length = 100
 
 [tool.isort]
 profile = "black"
