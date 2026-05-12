@@ -68,14 +68,14 @@ class SBC:
     transform : callable, optional
         A transform applied to both the reference draw and the posterior
         draws before computing the rank statistic. Signature:
-        ``(param_name, param_value) -> transformed_value``.
-        Useful for defining scalar test quantities (e.g.
-        ``lambda param_name, param_value: np.mean(param_value)`` to test the mean
-        of a vector parameter). The return values must be comparable with the ``<``
-        operator. The default is the identity (rank on the raw parameter values).
+        ``(param_name, param_value) -> transformed_value``. Useful for defining scalar
+        test quantities (e.g. ``lambda param_name, param_value: np.mean(param_value)``
+        to test the mean of a vector parameter). The return values must be comparable
+        with the ``<`` operator. The default is the identity (rank on the raw parameter values).
     keep_fits : bool, default True
-        Whether to store posteriors to allow re-evaluation of rank statistics using 
-        a different quantity (``compute_rank_statistics``) without needing to run the simulations again.
+        Whether to store posteriors to allow re-evaluation of rank statistics using
+        a different quantity (``compute_rank_statistics``) without needing to run the
+        simulations again.
 
     Example
     -------
@@ -99,7 +99,7 @@ class SBC:
         data_dir=None,
         simulator=None,
         transform=None,
-        keep_fits=True
+        keep_fits=True,
     ):
         if hasattr(model, "basic_RVs") and isinstance(model, pm.Model):
             self.engine = "pymc"
@@ -305,7 +305,7 @@ class SBC:
                 }
             },
         )
-    
+
     def compute_rank_statistics(self, transform=None):
         """Compute the rank statistic for the reference parameters.
 
@@ -343,10 +343,7 @@ class SBC:
         for idx, posterior in enumerate(self.posteriors):
             self._compute_single_rank(idx, posterior, transform)
 
-        self.simulations = {
-            k: np.stack(v)[None, :]
-            for k, v in self.simulations.items()
-        }
+        self.simulations = {k: np.stack(v)[None, :] for k, v in self.simulations.items()}
         self._convert_to_datatree()
         return self.simulations
 
@@ -378,8 +375,6 @@ class SBC:
                         < transform(name, self.ref_params[name].isel(sample=simulation_idx).values)
                     ).sum(axis=0)
                 )
-
-    
 
     @quiet_logging("pymc", "pytensor.gof.compilelock", "bambi")
     def run_simulations(self):
@@ -431,8 +426,7 @@ class SBC:
                     self.compute_rank_statistics()
                 else:
                     self.simulations = {
-                        k: np.stack(v)[None, :]
-                        for k, v in self.simulations.items()
+                        k: np.stack(v)[None, :] for k, v in self.simulations.items()
                     }
                     self._convert_to_datatree()
 
@@ -481,8 +475,7 @@ class SBC:
                     self.compute_rank_statistics()
                 else:
                     self.simulations = {
-                        k: np.stack(v)[None, :]
-                        for k, v in self.simulations.items()
+                        k: np.stack(v)[None, :] for k, v in self.simulations.items()
                     }
                     self._convert_to_datatree()
 
