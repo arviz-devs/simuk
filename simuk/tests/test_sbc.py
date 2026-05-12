@@ -28,11 +28,7 @@ with pm.Model() as centered_eight_no_observed:
     mu = pm.Normal("mu", mu=0, sigma=5)
     tau = pm.HalfCauchy("tau", beta=5)
     theta = pm.Normal("theta", mu=mu, sigma=tau, shape=8)
-
-    def log_likelihood(theta, observed):
-        return pm.math.sum(pm.logp(pm.Normal.dist(mu=theta, sigma=sigma), observed))
-
-    pm.Potential("y_loglike", log_likelihood(mu, data))
+    y_obs = pm.Normal("y", mu=theta, sigma=sigma)
 
 # Bambi model
 x = np.random.normal(0, 1, 20)
