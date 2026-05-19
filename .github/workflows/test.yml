@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.12", "3.13", "3.14"]
 
     name: Set up Python ${{ matrix.python-version }}
     steps:
@@ -43,8 +43,8 @@ jobs:
       - name: Run linters
         shell: bash -l {0}
         run: |
-          python -m black simuk --check
-          echo "Success!"
+          echo "Checking code formatting with ruff..."
+          ruff format --check simuk/
           echo "Checking code style with ruff..."
           ruff check simuk/
       - name: Run tests

@@ -1,5 +1,3 @@
-black==25.1.0
-click==8.0.4
 pytest-cov>=2.6.1
 pytest>=4.4.0
 pre-commit>=2.19
@@ -7,6 +5,6 @@ ipytest==0.13.0
 pymc>=5.20.1
 bambi>=0.13.0
 arviz_base>=0.5.0
-ruff==0.9.1
+ruff==0.15.13
 numpyro>=0.17.0
 numba>=0.60.0

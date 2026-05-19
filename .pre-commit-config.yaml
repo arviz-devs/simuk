@@ -1,14 +1,8 @@
 fail_fast: true
 
 repos:
-  - repo: https://github.com/ambv/black
-    rev: 22.3.0
-    hooks:
-      - id: black
-        language_version: python3  
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.8
+    rev: v0.15.13
     hooks:
       - id: ruff
         args: [ --fix, --exit-non-zero-on-fix ]
@@ -22,11 +16,9 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-      - id: check-added-large-files  
+      - id: check-added-large-files
         args: [--maxkb=1500]
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: mixed-line-ending
         args: [--fix=lf]
-
-
