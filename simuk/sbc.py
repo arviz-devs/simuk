@@ -169,7 +169,7 @@ class SBC:
         """Generate samples to use for the simulations."""
         with self.model:
             idata = pm.sample_prior_predictive(
-                samples=self.num_simulations, random_seed=self._seeds[0]
+                draws=self.num_simulations, random_seed=self._seeds[0]
             )
             prior = extract(idata, group="prior", keep_dataset=True)
             if self.simulator is None:
