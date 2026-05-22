@@ -17,6 +17,7 @@ except ImportError:
     pass
 
 from collections.abc import Mapping
+import inspect
 
 import numpy as np
 from arviz_base import dict_to_dataset, extract, from_dict, from_numpyro
@@ -102,7 +103,7 @@ class SBC:
             self.numpyro_model = model
             self.model = self.numpyro_model.model
             self.run_simulations = self._run_simulations_numpyro
-            self.data_dir = data_dir
+            self.data_dir = data_dir if data_dir is not None else {}
         else:
             raise ValueError(
                 "model should be one of pymc.Model, bambi.Model, or numpyro.infer.mcmc.MCMCKernel"
@@ -123,6 +124,7 @@ class SBC:
         self._extract_variable_names()
         self.simulations = {name: [] for name in self.var_names}
         self._simulations_complete = 0
+
         if simulator is not None and not callable(simulator):
             raise ValueError("simulator should be a function or None")
         if simulator is not None and self.observed_vars:
@@ -138,11 +140,28 @@ class SBC:
                 "predictive samples. Either change the model or specify a simulator "
                 "with the `simulator` argument."
             )
+        
+        if simulator is None and self.engine == "numpyro":
+            if not self.observed_model_vars:
+                raise ValueError(
+                    "There are no observed variables we can condition on, and NumPyro "
+                    "will not generate prior predictive samples. Either change the model "
+                    "or specify a simulator with the `simulator` argument."
+                )
+            missing = [
+                name for name in self.observed_model_vars if name not in self.data_dir
+            ]
+            if missing:
+                raise ValueError(
+                    "The following model parameters are missing from data_dir: "
+                    ", ".join(sorted(missing))
+                )
         self.simulator = simulator
 
     def _extract_variable_names(self):
         """Extract observed and free variables from the model."""
         if self.engine == "numpyro":
+            self.model_params = set(inspect.signature(self.model).parameters.keys())
             with trace() as tr:
                 with seed(rng_seed=int(self._seeds[0])):
                     self.numpyro_model.model(**self.data_dir)
@@ -156,6 +175,14 @@ class SBC:
                 for name, site in tr.items()
                 if site["type"] == "sample" and site.get("is_observed", False)
             ]
+            # Observed model variables are those that are marked as observed
+            # and are also model function parameters in order to be able to condition on them.
+            # For instance, this is used to filter out factor variables that are marked as observed 
+            # but cannot be conditioned on.
+            self.observed_model_vars = [
+                name for name in self.observed_vars if name in self.model_params
+            ]
+
         else:
             self.observed_vars = [obs.name for obs in self.model.observed_RVs]
             self.var_names = [v.name for v in self.model.free_RVs]
@@ -178,20 +205,25 @@ class SBC:
             # Deal with custom simulator
             prior_pred = []
             for i in range(prior.sizes["sample"]):
-                params = {var: prior[var].isel(sample=i).values for var in prior.data_vars}
+                params = {
+                    var: prior[var].isel(sample=i).values for var in prior.data_vars
+                }
                 params["seed"] = self._seeds[i]
                 try:
                     res = self.simulator(**params)
-                    assert isinstance(res, Mapping), (
-                        f"Simulator must return a dictionary, got {type(res)}"
-                    )
+                    assert isinstance(
+                        res, Mapping
+                    ), f"Simulator must return a dictionary, got {type(res)}"
                     prior_pred.append(res)
                 except Exception as e:
                     raise ValueError(
                         f"Error generating prior predictive sample with parameters {params}: {e}."
                     )
             prior_pred = dict_to_dataset(
-                {key: np.stack([pp[key] for pp in prior_pred]) for key in prior_pred[0]},
+                {
+                    key: np.stack([pp[key] for pp in prior_pred])
+                    for key in prior_pred[0]
+                },
                 sample_dims=["sample"],
                 coords={**prior.coords},
             )
@@ -200,7 +232,11 @@ class SBC:
     def _get_prior_predictive_samples_numpyro(self):
         """Generate samples to use for the simulations using numpyro."""
         predictive = Predictive(self.model, num_samples=self.num_simulations)
-        free_vars_data = {k: v for k, v in self.data_dir.items() if k not in self.observed_vars}
+        free_vars_data = {
+            k: v for k, v in self.data_dir.items() 
+            if k not in self.observed_vars
+            and k in self.model_params
+        }
         samples = predictive(jax.random.PRNGKey(self._seeds[0]), **free_vars_data)
         prior = {k: v for k, v in samples.items() if k not in self.observed_vars}
         if self.simulator:
@@ -209,9 +245,11 @@ class SBC:
                 params = dict(zip(prior.keys(), vals))
                 params["seed"] = self._seeds[i]
                 results.append(self.simulator(**params))
-            prior_pred = {key: [result[key] for result in results] for key in results[0]}
+            prior_pred = {
+                key: [result[key] for result in results] for key in results[0]
+            }
         else:
-            prior_pred = {k: v for k, v in samples.items() if k in self.observed_vars}
+            prior_pred = {k: v for k, v in samples.items() if k in self.observed_model_vars}
         return prior, prior_pred
 
     def _get_posterior_samples(self, prior_predictive_draw):
@@ -219,7 +257,8 @@ class SBC:
         new_model = pm.observe(self.model, prior_predictive_draw)
         with new_model:
             check = pm.sample(
-                **self.sample_kwargs, random_seed=self._seeds[self._simulations_complete]
+                **self.sample_kwargs,
+                random_seed=self._seeds[self._simulations_complete],
             )
 
         posterior = extract(check, group="posterior", keep_dataset=True)
@@ -229,13 +268,16 @@ class SBC:
         """Generate posterior samples using numpyro conditioned to a prior predictive sample."""
         mcmc = MCMC(self.numpyro_model, **self.sample_kwargs)
         rng_seed = jax.random.PRNGKey(self._seeds[self._simulations_complete])
-        # If using a custom simulator, some variables present in `prior_predictive_draw`
-        # might be missing from self.observed_vars.
-        # TODO: Not sure if the union is redundant here and perhaps prior_predictive_draw.keys()
-        # could be sufficient.
-        extended_observed_vars = set(prior_predictive_draw.keys()).union(self.observed_vars)
-        free_vars_data = {k: v for k, v in self.data_dir.items() if k not in extended_observed_vars}
-        mcmc.run(rng_seed, **free_vars_data, **prior_predictive_draw)
+
+        free_vars_data = {
+            k: v
+            for k, v in self.data_dir.items()
+            if k not in self.observed_model_vars and k in self.model_params
+        }
+        prior_predictive_args = {
+            k: v for k, v in prior_predictive_draw.items() if k in self.observed_model_vars
+        }
+        mcmc.run(rng_seed, **free_vars_data, **prior_predictive_args)
         return from_numpyro(mcmc)["posterior"]
 
     def _convert_to_datatree(self):
@@ -271,7 +313,10 @@ class SBC:
         if self.simulator is not None:
             self.observed_vars = list(prior_pred.data_vars)
             self.var_names = list(
-                filter(lambda var_name: var_name not in self.observed_vars, list(prior.data_vars))
+                filter(
+                    lambda var_name: var_name not in self.observed_vars,
+                    list(prior.data_vars),
+                )
             )
             self.simulations = {var_name: [] for var_name in self.var_names}
 
@@ -286,7 +331,9 @@ class SBC:
                 posterior = self._get_posterior_samples(prior_predictive_draw)
                 for name in self.var_names:
                     self.simulations[name].append(
-                        (posterior[name] < prior[name].sel(chain=0, draw=idx)).sum("sample").values
+                        (posterior[name] < prior[name].sel(chain=0, draw=idx))
+                        .sum("sample")
+                        .values
                     )
                 self._simulations_complete += 1
                 progress.update()
@@ -309,8 +356,17 @@ class SBC:
         # if simulator is used, ignore observed_vars
         if self.simulator is not None:
             self.observed_vars = list(prior_pred.keys())
+            self.observed_model_vars = [
+                name for name in self.observed_vars if name in self.model_params
+            ]
+            if not self.observed_model_vars:
+                raise ValueError("No observed variables to condition on")
+            
             self.var_names = list(
-                filter(lambda var_name: var_name not in self.observed_vars, list(prior.keys()))
+                filter(
+                    lambda var_name: var_name not in self.observed_vars,
+                    list(prior.keys()),
+                )
             )
             self.simulations = {var_name: [] for var_name in self.var_names}
         try:
@@ -320,7 +376,9 @@ class SBC:
                 posterior = self._get_posterior_samples_numpyro(prior_predictive_draw)
                 for name in self.var_names:
                     self.simulations[name].append(
-                        (posterior[name].sel(chain=0) < prior[name][idx]).sum(axis=0).values
+                        (posterior[name].sel(chain=0) < prior[name][idx])
+                        .sum(axis=0)
+                        .values
                     )
                 self._simulations_complete += 1
                 progress.update()
