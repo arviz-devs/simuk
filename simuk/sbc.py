@@ -16,8 +16,8 @@ try:
 except ImportError:
     pass
 
-from collections.abc import Mapping
 import inspect
+from collections.abc import Mapping
 
 import numpy as np
 from arviz_base import dict_to_dataset, extract, from_dict, from_numpyro
