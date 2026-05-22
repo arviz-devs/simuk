@@ -151,9 +151,8 @@ class SBC:
             missing = [name for name in self.observed_model_vars if name not in self.data_dir]
             if missing:
                 raise ValueError(
-                    "The following model parameters are missing from data_dir: , ".join(
-                        sorted(missing)
-                    )
+                    "The following model parameters are missing from data_dir: "
+                    + ", ".join(sorted(missing))
                 )
         self.simulator = simulator
 

@@ -56,6 +56,11 @@ def eight_schools_cauchy_prior_no_observed(J, sigma, y=None):
         numpyro.factor("custom_likelihood", log_likelihood)
 
 
+def numpyro_model_double_observed(y1=jnp.array([0.0]), y2=jnp.array([0.0])):
+    numpyro.sample("y1", dist.Normal(0, 1), obs=y1)
+    numpyro.sample("y2", dist.Normal(0, 1), obs=y2)
+
+
 # Custom simulator functions
 def centered_eight_simulator(theta, seed, **kwargs):
     rng = np.random.default_rng(seed)
@@ -174,4 +179,39 @@ def test_sbc_numpyro_fail_no_observed_variable():
             num_simulations=10,
             sample_kwargs={"num_warmup": 50, "num_samples": 25},
         )
+        sbc.run_simulations()
+
+
+def test_sbc_numpyro_missing_observed_data():
+    with pytest.raises(ValueError, match="missing from data_dir"):
+        simuk.SBC(
+            NUTS(numpyro_model_double_observed),
+            data_dir={"y2": [0.0]},
+            num_simulations=10,
+            sample_kwargs={"num_warmup": 10, "num_samples": 5},
+        )
+
+
+def test_sbc_numpyro_empty_observed_data():
+    with pytest.raises(ValueError, match="no observed variables"):
+        simuk.SBC(
+            NUTS(eight_schools_cauchy_prior),
+            data_dir={"J": 8, "sigma": sigma},
+            num_simulations=10,
+            sample_kwargs={"num_warmup": 10, "num_samples": 5},
+        )
+
+
+def test_sbc_numpyro_simulator_no_conditionable_observed():
+    def bad_simulator(**kwargs):
+        return {"not_a_param": np.array([0.0])}
+
+    sbc = simuk.SBC(
+        NUTS(eight_schools_cauchy_prior),
+        data_dir={"J": 8, "sigma": sigma, "y": data},
+        num_simulations=5,
+        sample_kwargs={"num_warmup": 10, "num_samples": 5},
+        simulator=bad_simulator,
+    )
+    with pytest.raises(ValueError, match="No observed variables to condition on"):
         sbc.run_simulations()
