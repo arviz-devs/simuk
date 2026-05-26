@@ -755,8 +755,8 @@ class SBC:
 
                 self._simulations_complete += 1
                 progress.update()
-        except Exception as e:
-            logging.error(f"Stopping simulation. An error occurred during simulations:")
+        except Exception:
+            logging.error("Stopping simulation. An error occurred during simulations:")
             traceback.print_exc()
         finally:
             if self._simulations_complete:
