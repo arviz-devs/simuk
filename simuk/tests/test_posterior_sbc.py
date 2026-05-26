@@ -3,8 +3,10 @@
 import logging
 
 import numpy as np
+import numpyro.distributions as dist
 import pymc as pm
 import pytest
+from numpyro.infer import NUTS
 
 import simuk
 
@@ -108,9 +110,7 @@ def test_posterior_sbc_with_observed_data(model, trace):
     assert "posterior_sbc" in sbc.simulations
 
 
-@pytest.mark.parametrize(
-    "model,trace,update_data", [(reg_model, trace_reg, update_data_reg)]
-)
+@pytest.mark.parametrize("model,trace,update_data", [(reg_model, trace_reg, update_data_reg)])
 def test_posterior_sbc_with_update_data(model, trace, update_data):
     """Posterior SBC with dims/coords and update_data callback."""
     sbc = simuk.SBC(
@@ -130,9 +130,7 @@ def test_posterior_sbc_with_update_data(model, trace, update_data):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    "model,trace,simulator", [(simple_model, trace_simple, custom_simulator)]
-)
+@pytest.mark.parametrize("model,trace,simulator", [(simple_model, trace_simple, custom_simulator)])
 def test_posterior_sbc_with_custom_simulator(model, trace, simulator):
     """Posterior SBC using a custom simulator function."""
     sbc = simuk.SBC(
@@ -242,8 +240,6 @@ def test_posterior_sbc_too_many_simulations():
 def test_posterior_sbc_numpyro_not_implemented():
     """Posterior SBC is not yet implemented for NumPyro."""
     numpyro = pytest.importorskip("numpyro")
-    import numpyro.distributions as dist
-    from numpyro.infer import NUTS
 
     def numpyro_model(y=None):
         mu = numpyro.sample("mu", dist.Normal(0, 5))
