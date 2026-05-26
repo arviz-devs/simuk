@@ -87,7 +87,7 @@ def update_data_reg(model, augmented_data, idx):
     )
 
 
-def custom_param_transform(param_name, param_value):
+def custom_transform(param_name, param_value):
     return param_value**2
 
 
@@ -164,18 +164,18 @@ def test_posterior_sbc_with_augment_observed(model, trace, augment_observed):
 
 
 @pytest.mark.parametrize(
-    "model,trace,param_transform",
-    [(simple_model, trace_simple, custom_param_transform)],
+    "model,trace,transform",
+    [(simple_model, trace_simple, custom_transform)],
 )
-def test_posterior_sbc_with_param_transform(model, trace, param_transform):
-    """Posterior SBC with a param_transform(name, value) function."""
+def test_posterior_sbc_with_transform(model, trace, transform):
+    """Posterior SBC with a transform(name, value) function."""
     sbc = simuk.SBC(
         model,
         method="posterior",
         trace=trace,
         num_simulations=2,
         sample_kwargs={"draws": 5, "tune": 5},
-        param_transform=param_transform,
+        transform=transform,
     )
     sbc.run_simulations()
     assert "posterior_sbc" in sbc.simulations
