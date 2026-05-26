@@ -215,3 +215,63 @@ def test_sbc_numpyro_simulator_no_conditionable_observed():
     )
     with pytest.raises(ValueError, match="No observed variables to condition on"):
         sbc.run_simulations()
+
+
+# --- Initialization and transform validation tests ---
+def test_sbc_invalid_model_type():
+    with pytest.raises(ValueError, match="model should be one of"):
+        simuk.SBC(object())
+
+
+def test_sbc_simulator_not_callable():
+    with pytest.raises(ValueError, match="simulator should be a function or None"):
+        simuk.SBC(centered_eight, simulator=123)
+
+
+def test_sbc_transform_not_callable_init():
+    with pytest.raises(ValueError, match="`param_transform` should be a function or None"):
+        simuk.SBC(centered_eight, transform="not callable")
+
+
+def test_compute_rank_statistics_requires_keep_fits():
+    sbc = simuk.SBC(
+        centered_eight,
+        num_simulations=1,
+        sample_kwargs={"draws": 5, "tune": 5},
+        keep_fits=False,
+    )
+    with pytest.raises(ValueError, match="requires `keep_fits` to be True"):
+        sbc.compute_rank_statistics()
+
+
+def test_compute_rank_statistics_transform_not_callable():
+    sbc = simuk.SBC(
+        centered_eight,
+        num_simulations=1,
+        sample_kwargs={"draws": 5, "tune": 5},
+    )
+    with pytest.raises(ValueError, match="`transform` should be a function or None"):
+        sbc.compute_rank_statistics(transform=123)
+
+
+def test_sbc_run_simulations_keep_fits_false():
+    sbc = simuk.SBC(
+        centered_eight,
+        num_simulations=2,
+        sample_kwargs={"draws": 5, "tune": 5},
+        keep_fits=False,
+    )
+    sbc.run_simulations()
+    assert "prior_sbc" in sbc.simulations
+
+
+def test_sbc_numpyro_run_simulations_keep_fits_false():
+    sbc = simuk.SBC(
+        NUTS(eight_schools_cauchy_prior),
+        data_dir={"J": 8, "sigma": sigma, "y": data},
+        num_simulations=2,
+        sample_kwargs={"num_warmup": 10, "num_samples": 5},
+        keep_fits=False,
+    )
+    sbc.run_simulations()
+    assert "prior_sbc" in sbc.simulations
