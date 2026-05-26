@@ -136,17 +136,17 @@ class SBC:
     Notes
     -----
     **Prior SBC** exploits the self-consistency of Bayesian updating:
-    if :math:`\\theta' \\sim \\pi(\\theta)` and
-    :math:`y' \\sim \\pi(y \\mid \\theta')`, then :math:`\\theta'` is also
-    a draw from :math:`\\pi(\\theta \\mid y')`.  See Talts et al. (2020).
+    if :math:`\theta' \sim \pi(\theta)` and
+    :math:`y' \sim \pi(y \mid \theta')`, then :math:`\theta'` is also
+    a draw from :math:`\pi(\theta \mid y')`.  See Talts et al. (2020).
 
     **Posterior SBC** uses the same self-consistency after conditioning
-    on observed data :math:`y_{\\text{obs}}`.  A draw
-    :math:`\\theta'_i \\sim \\pi(\\theta \\mid y_{\\text{obs}})` and a
-    replicated dataset :math:`y_i \\sim \\pi(y \\mid \\theta'_i)` are
-    combined so that :math:`\\theta'_i` is also a draw from
-    :math:`\\pi(\\theta \\mid y_i, y_{\\text{obs}})`.  The rank of
-    :math:`\\theta'_i` among augmented-posterior draws should be
+    on observed data :math:`y_{\text{obs}}`.  A draw
+    :math:`\theta'_i \sim \pi(\theta \mid y_{\text{obs}})` and a
+    replicated dataset :math:`y_i \sim \pi(y \mid \theta'_i)` are
+    combined so that :math:`\theta'_i` is also a draw from
+    :math:`\pi(\theta \mid y_i, y_{\text{obs}})`.  The rank of
+    :math:`\theta'_i` among augmented-posterior draws should be
     uniformly distributed if the inference is calibrated.
     See Säilynoja et al. (2025).
 
