@@ -425,14 +425,16 @@ class SBC:
             params["seed"] = self._seeds[i]
             try:
                 res = self.simulator(**params)
-                assert isinstance(res, Mapping), (
-                    f"Simulator must return a dictionary, got {type(res)}"
-                )
-                pred.append(res)
             except Exception as e:
                 raise ValueError(
                     f"Error generating prior predictive sample with parameters {params}: {e}."
                 )
+
+            if not isinstance(res, Mapping):
+                raise TypeError(f"Simulator must return a dictionary, got {type(res)}")
+
+            pred.append(res)
+
         pred = dict_to_dataset(
             {key: np.stack([pp[key] for pp in pred]) for key in pred[0]},
             sample_dims=["sample"],
