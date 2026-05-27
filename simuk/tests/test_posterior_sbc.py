@@ -272,3 +272,59 @@ def test_posterior_sbc_warnings_for_prior(caplog):
     assert "update_data" in messages
     assert "augment_observed" in messages
     assert "trace" in messages
+
+
+def test_posterior_sbc_update_data_not_callable():
+    """Passing a non-callable update_data should raise ValueError."""
+    with pytest.raises(ValueError, match="`update_data` should be a function or None"):
+        simuk.SBC(
+            simple_model,
+            method="posterior",
+            num_simulations=5,
+            sample_kwargs={"draws": 5, "tune": 5},
+            trace=trace_simple,
+            update_data="not a function",
+        )
+
+
+def test_posterior_sbc_augment_observed_not_callable():
+    """Passing a non-callable augment_observed should raise ValueError."""
+    with pytest.raises(ValueError, match="`augment_observed` should be a function or None"):
+        simuk.SBC(
+            simple_model,
+            method="posterior",
+            num_simulations=5,
+            sample_kwargs={"draws": 5, "tune": 5},
+            trace=trace_simple,
+            augment_observed="not a function",
+        )
+
+
+def test_posterior_sbc_bad_simulator_args():
+    """Any fault in executing the simulator should raise a general ValueError."""
+    with pytest.raises(ValueError, match="Error generating prior predictive sample"):
+        sbc = simuk.SBC(
+            simple_model,
+            method="posterior",
+            num_simulations=5,
+            sample_kwargs={"draws": 5, "tune": 5},
+            trace=trace_simple,
+            # bad function args
+            simulator=lambda: None,
+        )
+        sbc.run_simulations()
+
+
+def test_posterior_sbc_bad_simulator_return():
+    """Simulator should return a dictionary, otherwise raise a TypeError."""
+    with pytest.raises(TypeError, match="Simulator must return a dictionary"):
+        sbc = simuk.SBC(
+            simple_model,
+            method="posterior",
+            num_simulations=5,
+            sample_kwargs={"draws": 5, "tune": 5},
+            trace=trace_simple,
+            simulator=lambda *args, **kwargs: None,
+        )
+
+        sbc.run_simulations()
