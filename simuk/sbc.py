@@ -301,7 +301,7 @@ class SBC:
             self._transform = transform
 
         self.method = method.lower()
-        if method == "posterior":
+        if self.method == "posterior":
             if trace is None:
                 raise ValueError(
                     "When performing Posterior SBC, posterior samples from the "
