@@ -229,7 +229,7 @@ def test_sbc_simulator_not_callable():
 
 
 def test_sbc_transform_not_callable_init():
-    with pytest.raises(ValueError, match="`param_transform` should be a function or None"):
+    with pytest.raises(ValueError, match="`transform` should be a function or None"):
         simuk.SBC(centered_eight, transform="not callable")
 
 

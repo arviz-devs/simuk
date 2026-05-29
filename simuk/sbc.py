@@ -297,7 +297,7 @@ class SBC:
         self._transform = lambda param_name, param_value: param_value
         if transform is not None:
             if not callable(transform):
-                raise ValueError("`param_transform` should be a function or None")
+                raise ValueError("`transform` should be a function or None")
             self._transform = transform
 
         self.method = method.lower()
@@ -632,7 +632,7 @@ class SBC:
             This function is applied to both the posterior draws and the
             reference parameter draws before computing the rank. For instance,
             it can be used to take the mean over a vectorized parameter grouping.
-            If None, defaults to the `param_transform` passed during class
+            If None, defaults to the `transform` passed during class
             initialization.
 
         Returns
