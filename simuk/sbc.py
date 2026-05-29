@@ -307,9 +307,9 @@ class SBC:
                     "When performing Posterior SBC, posterior samples from the "
                     "original posterior are required to generate replicate datasets"
                 )
-            if "posterior" not in trace.groups():
+            if "posterior" not in trace.groups:
                 raise ValueError("`trace` should contain 'posterior' group")
-            if "observed_data" not in trace.groups():
+            if "observed_data" not in trace.groups:
                 raise ValueError("`trace` should contain 'observed_data' group")
             if self.num_simulations > trace["posterior"].sizes["draw"]:
                 raise ValueError(
