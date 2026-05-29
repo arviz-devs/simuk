@@ -147,7 +147,7 @@ sbc = simuk.SBC(
     model,
     method="posterior",
     trace=idata,
-    param_transform=param_transform,
+    transform=param_transform,
     update_data=update_data,
     num_simulations=50,
     seed=random_seed,
