@@ -2,8 +2,13 @@ Overview
 ========
 
 Simuk is a Python library for simulation-based calibration (SBC) and the generation of synthetic data.
-Simulation-Based Calibration (SBC) is a method for validating Bayesian inference by checking whether the
-posterior distributions align with the expected theoretical results derived from the prior (posterior).
+
+Prior Simulation-Based Calibration (Prior SBC) is a method for validating Bayesian inference by checking
+whether the posterior distributions align with the expected theoretical results derived from the prior.
+
+Posterior Simulation-Based Calibration (Posterior SBC) is a method for validating Bayesian inference by
+checking whether the posterior distributions conditioned on the augmented data (original + posterior predictive) 
+align with the expected theoretical results derived from the posterior.
 
 Prior SBC Quickstart
 ----------

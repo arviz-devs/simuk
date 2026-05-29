@@ -28,3 +28,10 @@ The gallery below presents examples that demonstrate the use of Simuk.
          :alt: Posterior SBC
       +++
       Posterior SBC
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   examples/gallery/prior_sbc
+   examples/gallery/posterior_sbc

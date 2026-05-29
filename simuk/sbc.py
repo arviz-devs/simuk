@@ -65,7 +65,7 @@ class SBC:
 
     - **Prior SBC** (``method="prior"``, default): validates that the inference
       algorithm across the prior. Reference draws come from the prior and replicated data
-      from the prior predictive (Talts et al.,` 2020 [1]_).
+      from the prior predictive (Talts et al., 2020 [1]_).
     - **Posterior SBC** (``method="posterior"``): validates that the inference
       algorithm across the posterior. Reference draws come from the original posterior
       and replicated data from the posterior predictive. The model is then re-fit on the
@@ -138,7 +138,7 @@ class SBC:
     **Prior SBC** exploits the self-consistency of Bayesian updating:
     if :math:`\theta' \sim \pi(\theta)` and
     :math:`y' \sim \pi(y \mid \theta')`, then :math:`\theta'` is also
-    a draw from :math:`\pi(\theta \mid y')`.  See Talts et al. (2020).
+    a draw from :math:`\pi(\theta \mid y')`.  See Talts et al., 2020 [1]_.
 
     **Posterior SBC** uses the same self-consistency after conditioning
     on observed data :math:`y_{\text{obs}}`.  A draw
@@ -148,7 +148,7 @@ class SBC:
     :math:`\pi(\theta \mid y_i, y_{\text{obs}})`.  The rank of
     :math:`\theta'_i` among augmented-posterior draws should be
     uniformly distributed if the inference is calibrated.
-    See Säilynoja et al. (2025).
+    See Säilynoja et al., 2025 [2]_.
 
     References
     ----------

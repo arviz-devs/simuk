@@ -1,9 +1,13 @@
 # Simuk
 
 Simuk is a Python library for simulation-based calibration (SBC) and the generation of synthetic data.
-Simulation-Based Calibration is a method for validating Bayesian inference by checking whether the posterior distributions align with the expected theoretical results derived from the prior.
 
-Simuk works with [PyMC](http://docs.pymc.io), [Bambi](https://bambinos.github.io/bambi/) and [NumPyro](https://num.pyro.ai/en/latest/index.html) models.
+Prior Simulation-Based Calibration (Prior SBC) is a method for validating Bayesian inference by checking whether the posterior distributions align with the expected theoretical results derived from the prior.
+
+Posterior Simulation-Based Calibration (Posterior SBC) is a method for validating Bayesian inference by checking whether the posterior distributions conditioned on the augmented data (original + posterior predictive) align with the expected theoretical results derived from the posterior.
+
+For Prior SBC, Simuk works with [PyMC](http://docs.pymc.io), [Bambi](https://bambinos.github.io/bambi/) and [NumPyro](https://num.pyro.ai/en/latest/index.html) models.
+For Posterior SBC, Simuk only works with [PyMC](http://docs.pymc.io) models for now.
 
 ## Installation
 
@@ -37,7 +41,7 @@ pip install simuk
     ```python
     sbc = SBC(centered_eight,
             num_simulations=100, # ideally this should be higher, like 1000
-            sample_kwargs={'draws': 25, 'tune': 50})
+            sample_kwargs={'draws': 100, 'tune': 100})
 
     sbc.run_simulations()
     ```
@@ -54,7 +58,9 @@ should be close to uniform and within the oval envelope.
     );
     ```
 
-![Prior Simulation based calibration plots, ecdf](prior_ecdf.png)
+![Prior Simulation based calibration plots, ecdf](docs/examples/img/prior_sbc.png)
+
+We see that due to the funnel neck in the eight schools model, the inference algorithm is not well-calibrated, as indicated by the red points.
 
 ### Posterior SBC
 
@@ -109,7 +115,7 @@ covariates and coords in an `update_data` callback to match the augmented data.
         trace=idata,
         update_data=update_data,
         num_simulations=50,
-        sample_kwargs={"draws": 25, "tune": 50},
+        sample_kwargs={"draws": 100, "tune": 100},
         progress_bar=False
     )
     post_sbc.run_simulations()
@@ -117,7 +123,9 @@ covariates and coords in an `update_data` callback to match the augmented data.
     plot_ecdf_pit(post_sbc.simulations, group="posterior_sbc", visuals={"xlabel": False})
     ```
 
-![Posterior Simulation based calibration plots, ecdf](posterior_ecdf.png)
+![Posterior Simulation based calibration plots, ecdf](docs/examples/img/posterior_sbc.png)
+
+We see that the funnel neck in the eight schools model is avoided and the inference algorithm is well-calibrated locally for the observed data, as indicated by the absence of red points.
 
 ## References
 
