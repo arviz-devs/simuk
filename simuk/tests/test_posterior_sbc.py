@@ -10,15 +10,15 @@ from numpyro.infer import NUTS
 
 import simuk
 
-np.random.seed(42)
+default_rng = np.random.default_rng(1234)
 
 # ---------------------------------------------------------------------------
 # Test data
 # ---------------------------------------------------------------------------
 
-obs_data = np.random.normal(2.0, 1.0, size=20)
+obs_data = default_rng.normal(2.0, 1.0, size=20)
 x_obs = np.linspace(0, 1, 20)
-y_obs_reg = 1.5 * x_obs + np.random.normal(0, 0.5, size=20)
+y_obs_reg = 1.5 * x_obs + default_rng.normal(0, 0.5, size=20)
 
 # ---------------------------------------------------------------------------
 # PyMC models and traces
@@ -200,7 +200,7 @@ def test_posterior_sbc_no_trace():
 def test_posterior_sbc_trace_missing_posterior():
     """trace without 'posterior' group should raise ValueError."""
     trace_missing = trace_simple.copy()
-    del trace_missing.posterior
+    del trace_missing["posterior"]
     with pytest.raises(ValueError, match="posterior"):
         simuk.SBC(
             simple_model,
@@ -214,7 +214,7 @@ def test_posterior_sbc_trace_missing_posterior():
 def test_posterior_sbc_trace_missing_observed_data():
     """trace without 'observed_data' group should raise ValueError."""
     trace_missing = trace_simple.copy()
-    del trace_missing.observed_data
+    del trace_missing["observed_data"]
     with pytest.raises(ValueError, match="observed_data"):
         simuk.SBC(
             simple_model,

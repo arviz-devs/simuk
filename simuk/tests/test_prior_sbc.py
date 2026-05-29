@@ -11,7 +11,7 @@ from numpyro.infer import NUTS
 
 import simuk
 
-np.random.seed(1234)
+default_rng = np.random.default_rng(1234)
 
 # Test data
 data = np.array([28.0, 8.0, -3.0, 7.0, -1.0, 1.0, 18.0, 12.0])
@@ -31,8 +31,8 @@ with pm.Model() as centered_eight_no_observed:
     y_obs = pm.Normal("y", mu=theta, sigma=sigma)
 
 # Bambi model
-x = np.random.normal(0, 1, 20)
-y = 2 + np.random.normal(x, 1)
+x = default_rng.normal(0, 1, 20)
+y = 2 + default_rng.normal(x, 1)
 df = pd.DataFrame({"x": x, "y": y})
 bmb_model = bmb.Model("y ~ x", df)
 
