@@ -7,13 +7,31 @@ The gallery below presents examples that demonstrate the use of Simuk.
    :gutter: 2 2 3 3
 
    .. grid-item-card::
-      :link: ./examples/gallery/sbc.html
+      :link: ./examples/gallery/prior_sbc.html
       :text-align: center
       :shadow: none
       :class-card: example-gallery
 
-      .. image:: examples/img/sbc.png
-         :alt: SBC
+      .. image:: examples/img/prior_sbc.png
+         :alt: Prior SBC
 
       +++
-      SBC
+      Prior SBC
+
+   .. grid-item-card::
+      :link: ./examples/gallery/posterior_sbc.html
+      :text-align: center
+      :shadow: none
+      :class-card: example-gallery
+
+      .. image:: examples/img/posterior_sbc.png
+         :alt: Posterior SBC
+      +++
+      Posterior SBC
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   examples/gallery/prior_sbc
+   examples/gallery/posterior_sbc

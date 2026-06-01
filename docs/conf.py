@@ -46,7 +46,7 @@ numpydoc_show_class_members = False
 numpydoc_show_inherited_class_members = False
 numpydoc_class_members_toctree = False
 
-source_suffix = ".rst"
+source_suffix = {".rst": "restructuredtext", ".ipynb": "myst-nb"}
 
 master_doc = "index"
 language = "en"
