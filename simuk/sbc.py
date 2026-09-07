@@ -130,7 +130,9 @@ class SBC:
     keep_fits : bool, default True
         Whether to store posteriors to allow re-evaluation of rank statistics using
         a different quantity (``compute_rank_statistics``) without needing to run the
-        simulations again.
+        simulations again. ``self.posteriors`` will be an xarray Dataset with a
+        ``simulation`` dimension of length ``num_simulations``, and a ``sample`` dimension
+        of the same length as the number of posterior samples in each simulation.
 
     Notes
     -----
@@ -215,17 +217,20 @@ class SBC:
         progress_bar=True,
     ):
         self.num_simulations = num_simulations
+        if num_simulations <= 0:
+            raise ValueError("`num_simulations` must be a positive integer")
+
         self.seed = seed
         self._seeds = self._get_seeds()
 
         if hasattr(model, "basic_RVs") and isinstance(model, pm.Model):
-            from simuk.pymc_adapter import PymcAdapter  # noqa: PLC0415
+            from simuk.adapters.pymc_adapter import PymcAdapter  # noqa: PLC0415
 
             self.engine = "pymc"
             self.model = model
             self.adapter = PymcAdapter(self.model, simulator, trace, augment_observed, update_data)
         elif hasattr(model, "formula"):
-            from simuk.pymc_adapter import PymcAdapter  # noqa: PLC0415
+            from simuk.adapters.pymc_adapter import PymcAdapter  # noqa: PLC0415
 
             self.engine = "bambi"
             model.build()
@@ -236,7 +241,7 @@ class SBC:
             self.adapter = PymcAdapter(self.model, simulator, trace, augment_observed, update_data)
         elif isinstance(model, MCMCKernel):
             # runtime import so an environment with only Pymc can run SBC over Pymc models.
-            from simuk.numpyro_adapter import NumpyroAdapter  # noqa: PLC0415
+            from simuk.adapters.numpyro_adapter import NumpyroAdapter  # noqa: PLC0415
 
             self.engine = "numpyro"
             self.numpyro_model = model
@@ -267,7 +272,7 @@ class SBC:
         self.sample_kwargs = sample_kwargs
         self.simulations = {name: [] for name in self.adapter.var_names}
         self._simulations_complete = 0
-        self.posteriors: list[xr.Dataset] = []
+        self.posteriors: xr.Dataset | None = None
         self.keep_fits = keep_fits
 
         if simulator is not None and not callable(simulator):
@@ -393,7 +398,8 @@ class SBC:
 
         self.simulations = {name: [] for name in self.kept_simulation_params.var_names}
 
-        for idx, posterior in enumerate(self.posteriors):
+        for idx in range(self.posteriors.sizes["simulation"]):
+            posterior = self.posteriors.isel(simulation=idx)
             self._compute_single_rank(idx, posterior, transform, self.kept_simulation_params)
 
         self.simulations = {k: np.stack(v)[None, :] for k, v in self.simulations.items()}
@@ -482,7 +488,12 @@ class SBC:
                     self._simulations_complete,
                 )
                 if self.keep_fits:
-                    self.posteriors.append(posterior)
+                    posterior = posterior.expand_dims({"simulation": [idx]})
+                    if self.posteriors is None:
+                        self.posteriors = posterior
+                    else:
+                        self.posteriors = xr.concat([self.posteriors, posterior], dim="simulation")
+
                     self.kept_simulation_params = simulation_params
                 else:
                     self._compute_single_rank(idx, posterior, self._transform, simulation_params)

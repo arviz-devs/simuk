@@ -17,6 +17,12 @@ May be pip installed from github:
 pip install simuk
 ```
 
+or the latest development version can be installed with:
+
+```bash
+pip install git+https://github.com/arviz-devs/simuk.git
+```
+
 ## Quickstart
 
 ### Prior SBC
@@ -26,7 +32,7 @@ pip install simuk
     ```python
     import numpy as np
     import pymc as pm
-    from arviz_plots import plot_ecdf_pit
+    import simuk
 
     data = np.array([28.0, 8.0, -3.0, 7.0, -1.0, 1.0, 18.0, 12.0])
     sigma = np.array([15.0, 10.0, 16.0, 11.0, 9.0, 11.0, 10.0, 18.0])
@@ -39,7 +45,7 @@ pip install simuk
     ```
 2. Pass the model to the `SBC` class, and run the simulations. This will take a while, as it is running the model many times.
     ```python
-    sbc = SBC(centered_eight,
+    sbc = simuk.SBC(centered_eight,
             num_simulations=100, # ideally this should be higher, like 1000
             sample_kwargs={'draws': 100, 'tune': 100})
 
@@ -53,14 +59,23 @@ pip install simuk
 should be close to uniform and within the oval envelope.
 
     ```python
-    plot_ecdf_pit(sbc.simulations,
-                visuals={"xlabel":False},
-    );
+    simuk.plot_ecdf(sbc);
     ```
 
 ![Prior Simulation based calibration plots, ecdf](docs/examples/img/prior_sbc.png)
 
-We see that due to the funnel neck in the eight schools model, the inference algorithm is not well-calibrated, as indicated by the red points.
+We see that due to the funnel neck in the eight schools model, the inference algorithm is not well-calibrated, as indicated by the red dots.
+
+4. We could also plot the parameter recovery plot. If credible interval is 89%, then we should expect the observed coverage to be close to 89%.
+
+    ```python
+    simuk.plot_parameter_recovery(sbc);
+    ```
+
+![Prior Simulation based calibration plots, parameter recovery](docs/examples/img/prior_sbc_parameter_recovery.png)
+
+This indicates that the inference algorithm is struggling to sample the posterior, as indicated by the low coverage for the parameter $\tau$. From this we can also see the shape of the samples, and we clearly see that the posterior is stuck in the funnel neck.
+
 
 ### Posterior SBC
 
@@ -74,6 +89,7 @@ covariates and coords in an `update_data` callback to match the augmented data.
     ```python
     import numpy as np
     import pymc as pm
+    import simuk
 
     data = np.array([28.0, 8.0, -3.0, 7.0, -1.0, 1.0, 18.0, 12.0])
     sigma = np.array([15.0, 10.0, 16.0, 11.0, 9.0, 11.0, 10.0, 18.0])
@@ -99,9 +115,6 @@ covariates and coords in an `update_data` callback to match the augmented data.
 3. Define `update_data` to resize covariates and run Posterior SBC:
 
     ```python
-    import simuk
-    from arviz_plots import plot_ecdf_pit
-
     def update_data(model, augmented_data, simulation_idx):
         with model:
             pm.set_data({
@@ -114,18 +127,28 @@ covariates and coords in an `update_data` callback to match the augmented data.
         method="posterior",
         trace=idata,
         update_data=update_data,
-        num_simulations=50,
+        num_simulations=100,
         sample_kwargs={"draws": 100, "tune": 100},
         progress_bar=False
     )
     post_sbc.run_simulations()
 
-    plot_ecdf_pit(post_sbc.simulations, group="posterior_sbc", visuals={"xlabel": False})
+    simuk.plot_ecdf(post_sbc)
     ```
 
 ![Posterior Simulation based calibration plots, ecdf](docs/examples/img/posterior_sbc.png)
 
-We see that the funnel neck in the eight schools model is avoided and the inference algorithm is well-calibrated locally for the observed data, as indicated by the absence of red points.
+We see that the funnel neck in the eight schools model seems to be avoided and the inference algorithm is better well-calibrated locally for the observed data, but still struggles to sample the posterior.
+
+4. We could also plot the parameter recovery plot.
+
+    ```python
+    simuk.plot_parameter_recovery(post_sbc);
+    ```
+![Posterior Simulation based calibration plots, parameter recovery](docs/examples/img/posterior_sbc_parameter_recovery.png)
+
+The inference algorithm is struggling to sample the posterior, as indicated by the low coverage for the parameter $\tau$.
+
 
 ## References
 

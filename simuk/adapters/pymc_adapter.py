@@ -7,7 +7,7 @@ import pymc as pm
 import xarray as xr
 from arviz_base import dict_to_dataset, extract
 
-from simuk.backend_adapter import BackendAdapter
+from simuk.adapters.backend_adapter import BackendAdapter
 
 
 class PymcAdapter(BackendAdapter):

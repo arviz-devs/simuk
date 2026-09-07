@@ -6,10 +6,11 @@ import jax
 import numpy as np
 import xarray as xr
 from arviz_base import dict_to_dataset, extract, from_numpyro
+from arviz_base.io_numpyro import infer_dims
 from numpyro.handlers import seed, trace
 from numpyro.infer import MCMC, Predictive
 
-from simuk.backend_adapter import BackendAdapter
+from simuk.adapters.backend_adapter import BackendAdapter
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +47,9 @@ class NumpyroAdapter(BackendAdapter):
             if k not in self.observed_vars and k in self.model_params
         }
         samples = predictive(jax.random.PRNGKey(seeds[0]), **free_vars_data)
+
         prior = {k: v for k, v in samples.items() if k not in self.observed_vars}
+
         if self.simulator:
             results = []
             for i, vals in enumerate(zip(*prior.values())):
@@ -56,11 +59,12 @@ class NumpyroAdapter(BackendAdapter):
             prior_pred = {
                 key: np.asarray([result[key] for result in results]) for key in results[0]
             }
+            prior_pred = dict_to_dataset(prior_pred, sample_dims=["sample"])
         else:
             prior_pred = {k: v for k, v in samples.items() if k in self.observed_model_vars}
+            prior_pred = dict_to_dataset(prior_pred, sample_dims=["sample"], dims=self.dims_by_site)
 
-        prior = dict_to_dataset(prior, sample_dims=["sample"])
-        prior_pred = dict_to_dataset(prior_pred, sample_dims=["sample"])
+        prior = dict_to_dataset(prior, sample_dims=["sample"], dims=self.dims_by_site)
 
         return prior, prior_pred
 
@@ -86,6 +90,13 @@ class NumpyroAdapter(BackendAdapter):
         self.observed_model_vars = [
             name for name in self.observed_vars if name in self.model_params
         ]
+
+        # loop through the trace and pull the batch dim and event dim names
+        # This is needed such that the prior and prior predictive samples have
+        # the same dim names as the posterior samples. The prior samples from Predictive
+        # does not infer dim names.
+        # This uses the same helper ``from_numpyro`` applies to the posterior (via ``infer_dims``)
+        self.dims_by_site = infer_dims(self.numpyro_model.model, model_kwargs=self.data_dir)
 
     def simulation_params_from_simulator(self, ref_params, predictive):
         observed_vars = list(predictive.keys())
