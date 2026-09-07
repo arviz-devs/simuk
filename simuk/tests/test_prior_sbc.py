@@ -264,7 +264,7 @@ def test_compute_rank_statistics_recompute_with_new_transform():
     # With the default identity transform, theta keeps its vector shape
     assert sbc.simulations["prior_sbc"]["theta"].shape[-1] == 8
 
-    num_posteriors = len(sbc.posteriors)
+    num_posteriors = sbc.posteriors.sizes["simulation"]
     recomputed = sbc.compute_rank_statistics(
         transform=lambda param_name, param_value: np.mean(param_value)
     )
@@ -272,7 +272,7 @@ def test_compute_rank_statistics_recompute_with_new_transform():
     # The mean transform reduces the vector parameter to a scalar test quantity
     assert recomputed["prior_sbc"]["theta"].shape == (1, 2)
     # Recomputation reuses the stored fits instead of rerunning simulations
-    assert len(sbc.posteriors) == num_posteriors
+    assert sbc.posteriors.sizes["simulation"] == num_posteriors
     assert sbc._simulations_complete == 2
 
 

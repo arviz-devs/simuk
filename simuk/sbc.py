@@ -130,7 +130,9 @@ class SBC:
     keep_fits : bool, default True
         Whether to store posteriors to allow re-evaluation of rank statistics using
         a different quantity (``compute_rank_statistics``) without needing to run the
-        simulations again.
+        simulations again. ``self.posteriors`` will be an xarray Dataset with a
+        ``simulation`` dimension of length ``num_simulations``, and a ``sample`` dimension
+        of the same length as the number of posterior samples in each simulation.
 
     Notes
     -----
@@ -267,7 +269,7 @@ class SBC:
         self.sample_kwargs = sample_kwargs
         self.simulations = {name: [] for name in self.adapter.var_names}
         self._simulations_complete = 0
-        self.posteriors: list[xr.Dataset] = []
+        self.posteriors: xr.Dataset | None = None
         self.keep_fits = keep_fits
 
         if simulator is not None and not callable(simulator):
@@ -393,7 +395,8 @@ class SBC:
 
         self.simulations = {name: [] for name in self.kept_simulation_params.var_names}
 
-        for idx, posterior in enumerate(self.posteriors):
+        for idx in range(self.posteriors.sizes["simulation"]):
+            posterior = self.posteriors.isel(simulation=idx)
             self._compute_single_rank(idx, posterior, transform, self.kept_simulation_params)
 
         self.simulations = {k: np.stack(v)[None, :] for k, v in self.simulations.items()}
@@ -482,7 +485,12 @@ class SBC:
                     self._simulations_complete,
                 )
                 if self.keep_fits:
-                    self.posteriors.append(posterior)
+                    posterior = posterior.expand_dims({"simulation": [idx]})
+                    if self.posteriors is None:
+                        self.posteriors = posterior
+                    else:
+                        self.posteriors = xr.concat([self.posteriors, posterior], dim="simulation")
+
                     self.kept_simulation_params = simulation_params
                 else:
                     self._compute_single_rank(idx, posterior, self._transform, simulation_params)
