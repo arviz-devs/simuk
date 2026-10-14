@@ -217,77 +217,6 @@ class SBC:
         self.num_simulations = num_simulations
         self.seed = seed
         self._seeds = self._get_seeds()
-
-        if hasattr(model, "basic_RVs") and isinstance(model, pm.Model):
-            from simuk.pymc_adapter import PymcAdapter  # noqa: PLC0415
-
-            self.engine = "pymc"
-            self.model = model
-            self.adapter = PymcAdapter(self.model, simulator, trace, augment_observed, update_data)
-        elif hasattr(model, "formula"):
-            from simuk.pymc_adapter import PymcAdapter  # noqa: PLC0415
-
-            self.engine = "bambi"
-            model.build()
-            self.bambi_model = model
-            self.model = model.backend.model
-            self.formula = model.formula
-            self.new_data = copy(model.data)
-            self.adapter = PymcAdapter(self.model, simulator, trace, augment_observed, update_data)
-        elif isinstance(model, MCMCKernel):
-            # runtime import so an environment with only Pymc can run SBC over Pymc models.
-            from simuk.numpyro_adapter import NumpyroAdapter  # noqa: PLC0415
-
-            self.engine = "numpyro"
-            self.numpyro_model = model
-            self.model = self.numpyro_model.model
-            self.data_dir = data_dir if data_dir is not None else {}
-            self.adapter = NumpyroAdapter(
-                self.data_dir, self.numpyro_model, self.model, simulator, self._seeds[0]
-            )
-        else:
-            raise ValueError(
-                "model should be one of pymc.Model, bambi.Model, or numpyro.infer.mcmc.MCMCKernel"
-            )
-
-        if method == "posterior" and self.engine != "pymc":
-            raise NotImplementedError("Currently, Posterior SBC is only implemented for PyMC")
-
-        self.progress_bar = progress_bar
-
-        if sample_kwargs is None:
-            sample_kwargs = {}
-        if self.engine == "numpyro":
-            sample_kwargs.setdefault("num_warmup", 1000)
-            sample_kwargs.setdefault("num_samples", 1000)
-            sample_kwargs.setdefault("progress_bar", False)
-        else:
-            sample_kwargs.setdefault("progressbar", False)
-            sample_kwargs.setdefault("compute_convergence_checks", False)
-        self.sample_kwargs = sample_kwargs
-        self.simulations = {name: [] for name in self.adapter.var_names}
-        self._simulations_complete = 0
-        self.posteriors: list[xr.Dataset] = []
-        self.keep_fits = keep_fits
-
-        if simulator is not None and not callable(simulator):
-            raise ValueError("simulator should be a function or None")
-        if simulator is not None and self.adapter.observed_vars:
-            logging.warning(
-                "Provided model contains both observed variables and a simulator. "
-                "Ignoring observed variables and using the simulator instead."
-            )
-        if simulator is None:
-            self.adapter.stop_if_cant_run_without_simulator()
-
-        self.simulator = simulator
-
-        self._transform = lambda param_name, param_value: param_value
-        if transform is not None:
-            if not callable(transform):
-                raise ValueError("`transform` should be a function or None")
-            self._transform = transform
-
         self.method = method.lower()
         if self.method == "posterior":
             if trace is None:
@@ -295,6 +224,7 @@ class SBC:
                     "When performing Posterior SBC, posterior samples from the "
                     "original posterior are required to generate replicate datasets"
                 )
+
             if "posterior" not in trace:
                 raise ValueError("`trace` should contain 'posterior' group")
             if "observed_data" not in trace:
@@ -331,6 +261,80 @@ class SBC:
             if trace is not None:
                 logging.warning("`trace` is only used for Posterior SBC. Ignoring...")
 
+        if hasattr(model, "basic_RVs") and isinstance(model, pm.Model):
+            from simuk.pymc_adapter import PymcAdapter  # noqa: PLC0415
+
+            self.engine = "pymc"
+            self.model = model
+            self.adapter = PymcAdapter(self.model, simulator, trace, augment_observed, update_data)
+        elif hasattr(model, "formula"):
+            from simuk.pymc_adapter import PymcAdapter  # noqa: PLC0415
+
+            self.engine = "bambi"
+            model.build()
+            self.bambi_model = model
+            self.model = model.backend.model
+            self.formula = model.formula
+            self.new_data = copy(model.data)
+            self.adapter = PymcAdapter(self.model, simulator, trace, augment_observed, update_data)
+        elif isinstance(model, MCMCKernel):
+            # runtime import so an environment with only Pymc can run SBC over Pymc models.
+            from simuk.numpyro_adapter import NumpyroAdapter  # noqa: PLC0415
+
+            self.engine = "numpyro"
+            self.numpyro_model = model
+            self.model = self.numpyro_model.model
+            self.data_dir = data_dir if data_dir is not None else {}
+            self.adapter = NumpyroAdapter(
+                self.data_dir,
+                self.numpyro_model,
+                self.model,
+                simulator,
+                self._seeds[0],
+                augment_observed,
+                update_data,
+                trace,
+            )
+        else:
+            raise ValueError(
+                "model should be one of pymc.Model, bambi.Model, or numpyro.infer.mcmc.MCMCKernel"
+            )
+
+        self.progress_bar = progress_bar
+
+        if sample_kwargs is None:
+            sample_kwargs = {}
+        if self.engine == "numpyro":
+            sample_kwargs.setdefault("num_warmup", 1000)
+            sample_kwargs.setdefault("num_samples", 1000)
+            sample_kwargs.setdefault("progress_bar", False)
+        else:
+            sample_kwargs.setdefault("progressbar", False)
+            sample_kwargs.setdefault("compute_convergence_checks", False)
+        self.sample_kwargs = sample_kwargs
+        self.simulations = {name: [] for name in self.adapter.var_names}
+        self._simulations_complete = 0
+        self.posteriors: list[xr.Dataset] = []
+        self.keep_fits = keep_fits
+
+        if simulator is not None and not callable(simulator):
+            raise ValueError("simulator should be a function or None")
+        if simulator is not None and self.adapter.observed_vars:
+            logging.warning(
+                "Provided model contains both observed variables and a simulator. "
+                "Ignoring observed variables and using the simulator instead."
+            )
+        if simulator is None:
+            self.adapter.stop_if_cant_run_without_simulator()
+
+        self.simulator = simulator
+
+        self._transform = lambda param_name, param_value: param_value
+        if transform is not None:
+            if not callable(transform):
+                raise ValueError("`transform` should be a function or None")
+            self._transform = transform
+
     def _get_seeds(self):
         """Set the random seed, and generate seeds for all the simulations."""
         rng = np.random.default_rng(self.seed)
@@ -351,10 +355,10 @@ class SBC:
             {group_name: self.simulations},
             attrs={
                 "/": {
-                    "inferece_library": self.engine,
-                    "inferece_library_version": version(self.engine),
+                    "inference_library": self.engine,
+                    "inference_library_version": version(self.engine),
                     "modeling_interface": "simuk",
-                    "modeling_interface_version": version("simuk"),
+                    "modeling_interface_version": "TODO ROLLBACK",
                 }
             },
         )
@@ -489,13 +493,14 @@ class SBC:
 
                 self._simulations_complete += 1
                 progress.update()
-        except Exception:
-            _log.exception("Stopping simulation. An error occurred during simulations:")
+        except Exception as e:
+            _log.exception("Stopping simulation. An error occurred during simulations:", exc_info=e)
         finally:
             if self._simulations_complete:
                 if self.keep_fits:
                     self.compute_rank_statistics()
                 else:
+                    # TODO CREATE ISSUE ASKING FOR THIS
                     self.simulations = {
                         k: np.stack(v)[None, :] for k, v in self.simulations.items()
                     }

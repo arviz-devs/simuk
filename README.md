@@ -7,7 +7,7 @@ Prior Simulation-Based Calibration (Prior SBC) is a method for validating Bayesi
 Posterior Simulation-Based Calibration (Posterior SBC) is a method for validating Bayesian inference by checking whether the posterior distributions conditioned on the augmented data (original + posterior predictive) align with the expected theoretical results derived from the posterior.
 
 For Prior SBC, Simuk works with [PyMC](http://docs.pymc.io), [Bambi](https://bambinos.github.io/bambi/) and [NumPyro](https://num.pyro.ai/en/latest/index.html) models.
-For Posterior SBC, Simuk only works with [PyMC](http://docs.pymc.io) models for now.
+For Posterior SBC, Simuk only works with [PyMC](http://docs.pymc.io) and [NumPyro](https://num.pyro.ai/en/latest/index.html) models.
 
 ## Installation
 

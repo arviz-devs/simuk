@@ -1,13 +1,12 @@
 import traceback
-from collections.abc import Mapping
 from typing import NamedTuple
 
 import numpy as np
 import pymc as pm
 import xarray as xr
-from arviz_base import dict_to_dataset, extract
+from arviz_base import extract
 
-from simuk.backend_adapter import BackendAdapter
+from simuk.backend_adapter import BackendAdapter, get_simulator_data
 
 
 class PymcAdapter(BackendAdapter):
@@ -20,27 +19,24 @@ class PymcAdapter(BackendAdapter):
         self._extract_model_info()
 
     def get_posterior_predictive_samples(self, num_simulations, seeds, progress_bar):
-        with self.model:
-            num_draws = self.trace["posterior"].sizes["draw"]
-            draw_indices = np.linspace(0, num_draws - 1, num_simulations, dtype=int)
-            thinned_idata = self.trace.isel(draw=draw_indices)
-            posterior = extract(thinned_idata, group="posterior", keep_dataset=True)
-
-            if self.simulator is None:
+        num_draws = self.trace["posterior"].sizes["draw"]
+        draw_indices = np.linspace(0, num_draws - 1, num_simulations, dtype=int)
+        thinned_idata = self.trace.isel(draw=draw_indices)
+        posterior = extract(thinned_idata, group="posterior", keep_dataset=True)
+        if self.simulator is None:
+            with self.model:
                 pm.sample_posterior_predictive(
                     thinned_idata,
                     extend_inferencedata=True,
                     random_seed=seeds[0],
                     progressbar=progress_bar,
                 )
-                posterior_pred = extract(
-                    thinned_idata, group="posterior_predictive", keep_dataset=True
-                )
-                return posterior, posterior_pred
-            else:
-                posterior_pred = self._get_simulator_data(posterior, seeds)
-
+            posterior_pred = extract(thinned_idata, group="posterior_predictive", keep_dataset=True)
             return posterior, posterior_pred
+        else:
+            posterior_pred = get_simulator_data(self.simulator, posterior, seeds)
+
+        return posterior, posterior_pred
 
     def compute_single_rank(self, transform, name, posterior, simulation_idx, ref_params):
         transformed_posterior = np.array(
@@ -64,41 +60,9 @@ class PymcAdapter(BackendAdapter):
                 prior_pred = extract(idata, group="prior_predictive", keep_dataset=True)
                 return prior, prior_pred
 
-            prior_pred = self._get_simulator_data(prior, seeds)
+            prior_pred = get_simulator_data(self.simulator, prior, seeds)
 
         return prior, prior_pred
-
-    def _get_simulator_data(self, free_rv_samples, seeds):
-        """Run the user-defined simulator to obtain predictive samples.
-
-        These samples can be generated from either prior or posterior samples.
-        """
-        # Deal with custom simulator
-        pred = []
-        for i in range(free_rv_samples.sizes["sample"]):
-            params = {
-                var: free_rv_samples[var].isel(sample=i).values for var in free_rv_samples.data_vars
-            }
-            params["seed"] = seeds[i]
-            try:
-                res = self.simulator(**params)
-            except Exception as e:
-                raise ValueError(
-                    f"Error generating prior predictive sample with parameters {params}: {e}."
-                ) from e
-
-            if not isinstance(res, Mapping):
-                raise TypeError(f"Simulator must return a dictionary, got {type(res)}")
-
-            pred.append(res)
-
-        pred = dict_to_dataset(
-            {key: np.stack([pp[key] for pp in pred]) for key in pred[0]},
-            sample_dims=["sample"],
-            coords={**free_rv_samples.coords},
-        )
-
-        return pred
 
     def _extract_model_info(self):
         """Extract observed and free variables from the model.
